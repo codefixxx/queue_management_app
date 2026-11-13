@@ -3,7 +3,6 @@ import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { api } from '../api';
 import { QueueSummary } from '../types';
-import { Layers } from 'lucide-react';
 
 interface CreateQueueModalProps {
   isOpen: boolean;
@@ -56,61 +55,60 @@ export const CreateQueueModal: React.FC<CreateQueueModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg">
+          <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-[var(--radius)]">
             {error}
           </div>
         )}
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Queue Name *</label>
+          <label className="block text-xs font-semibold text-foreground mb-1">Queue Name *</label>
           <input
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Technical Consultation or Counter A"
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Token Prefix</label>
+            <label className="block text-xs font-semibold text-foreground mb-1">Token Prefix</label>
             <input
               type="text"
               maxLength={4}
               value={prefix}
               onChange={(e) => setPrefix(e.target.value.toUpperCase())}
               placeholder="e.g. TC or A"
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg uppercase font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground uppercase font-mono placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
             />
-            <p className="text-[11px] text-slate-400 mt-1">Preview: {prefix || 'Q'}-001</p>
+            <p className="text-[11px] text-muted-foreground font-mono mt-1">Preview: {prefix || 'Q'}-001</p>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Queue Type</label>
-            <div className="px-3 py-2 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg">
+            <label className="block text-xs font-semibold text-foreground mb-1">Queue Type</label>
+            <div className="px-3 py-2 text-xs text-muted-foreground bg-secondary border border-border rounded-[var(--radius)]">
               Sequential FIFO with reordering
             </div>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Description (Optional)</label>
+          <label className="block text-xs font-semibold text-foreground mb-1">Description (Optional)</label>
           <textarea
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Purpose, counter location, or special instructions..."
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            placeholder="Brief purpose or instructions for this line..."
+            className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-none transition-colors"
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-2">
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
           <Button type="button" variant="outline" size="md" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" size="md" loading={loading}>
-            <Layers className="w-4 h-4 mr-1.5" />
+          <Button type="submit" variant="primary" size="md" loading={loading} className="shadow-sm">
             Create Queue
           </Button>
         </div>
@@ -118,4 +116,3 @@ export const CreateQueueModal: React.FC<CreateQueueModalProps> = ({
     </Modal>
   );
 };
-

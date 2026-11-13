@@ -116,133 +116,138 @@ export function App() {
     } else {
       setIsBootstrapping(false);
     }
-  }, []);
+  }, [loadQueues, loadAnalytics]);
 
-  // Keyboard ergonomics (Space to serve next, N for new token)
+  // Keyboard Shortcuts: Space to Serve Next, 'n' to Add Token
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const activeEl = document.activeElement;
-      const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
-      if (isInput || isAuthOpen || isCreateQueueOpen || isAddTokenOpen || cancelTargetToken || successToken) return;
+      // Don't trigger if user is typing in an input or textarea or modal is open
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        isAuthOpen ||
+        isCreateQueueOpen ||
+        isAddTokenOpen ||
+        cancelTargetToken ||
+        successToken
+      ) {
+        return;
+      }
 
-      if (e.code === 'Space' && activeTab === 'queue' && activeQueueId && queueDetails?.waitingTokens[0]) {
+      if (e.code === 'Space' && activeQueueId && user) {
         e.preventDefault();
         handleServeNext(activeQueueId);
-      } else if (e.key === 'n' || e.key === 'N') {
+      } else if ((e.key === 'n' || e.key === 'N') && activeQueueId && user) {
         e.preventDefault();
         setIsAddTokenOpen(true);
-      } else if (e.key === '1') {
-        setActiveTab('queue');
-      } else if (e.key === '2') {
-        setActiveTab('analytics');
-      } else if (e.key === '3') {
-        setActiveTab('display');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, activeQueueId, queueDetails, isAuthOpen, isCreateQueueOpen, isAddTokenOpen, cancelTargetToken, successToken]);
+  }, [activeQueueId, user, isAuthOpen, isCreateQueueOpen, isAddTokenOpen, cancelTargetToken, successToken]);
 
+  // Actions
   const handleSelectQueue = (id: string) => {
     setActiveQueueId(id);
     loadQueueDetails(id);
+    loadAnalytics(id);
   };
 
-  // Serve Next
   const handleServeNext = async (queueId: string) => {
     try {
       const res = await api.serveNext(queueId);
-      sound.playCallChime();
+      sound.playChime();
       addToast(res.message, 'success');
-      await loadQueueDetails(queueId);
-      await loadQueues(queueId);
+      loadQueueDetails(queueId);
+      loadQueues(queueId);
       loadAnalytics(queueId);
     } catch (err: any) {
+      sound.playError();
       addToast(err.message || 'Failed to serve next token', 'error');
     }
   };
 
-  // Move Up
   const handleMoveUp = async (tokenId: string) => {
     try {
       const res = await api.moveTokenUp(tokenId);
       sound.playTick();
       addToast(res.message, 'info');
-      if (activeQueueId) await loadQueueDetails(activeQueueId);
+      if (activeQueueId) loadQueueDetails(activeQueueId);
     } catch (err: any) {
-      addToast(err.message || 'Failed to move token up', 'error');
+      sound.playError();
+      addToast(err.message || 'Failed to move token', 'error');
     }
   };
 
-  // Move Down
   const handleMoveDown = async (tokenId: string) => {
     try {
       const res = await api.moveTokenDown(tokenId);
       sound.playTick();
       addToast(res.message, 'info');
-      if (activeQueueId) await loadQueueDetails(activeQueueId);
+      if (activeQueueId) loadQueueDetails(activeQueueId);
     } catch (err: any) {
-      addToast(err.message || 'Failed to move token down', 'error');
+      sound.playError();
+      addToast(err.message || 'Failed to move token', 'error');
     }
   };
 
-  // Cancel Token
-  const handleCancelConfirm = async (tokenId: string, reason: string) => {
+  const handleCancelConfirm = async (reason?: string) => {
+    if (!cancelTargetToken) return;
     try {
-      const res = await api.cancelToken(tokenId, reason);
+      const res = await api.cancelToken(cancelTargetToken.id, reason);
       addToast(res.message, 'info');
-      if (activeQueueId) {
-        await loadQueueDetails(activeQueueId);
-        await loadQueues(activeQueueId);
-        loadAnalytics(activeQueueId);
-      }
+      setCancelTargetToken(null);
+      if (activeQueueId) loadQueueDetails(activeQueueId);
+      loadQueues(activeQueueId || undefined);
+      loadAnalytics(activeQueueId || undefined);
     } catch (err: any) {
+      sound.playError();
       addToast(err.message || 'Failed to cancel token', 'error');
     }
   };
 
-  // Complete Service
   const handleCompleteService = async (tokenId: string) => {
     try {
       const res = await api.completeToken(tokenId);
+      sound.playChime();
       addToast(res.message, 'success');
-      if (activeQueueId) {
-        await loadQueueDetails(activeQueueId);
-        await loadQueues(activeQueueId);
-        loadAnalytics(activeQueueId);
-      }
+      if (activeQueueId) loadQueueDetails(activeQueueId);
+      loadQueues(activeQueueId || undefined);
+      loadAnalytics(activeQueueId || undefined);
     } catch (err: any) {
-      addToast(err.message || 'Failed to complete token service', 'error');
+      sound.playError();
+      addToast(err.message || 'Failed to complete token', 'error');
     }
   };
 
-  // Delete Queue
   const handleDeleteQueue = async (queueId: string) => {
+    if (!window.confirm('Are you sure you want to delete this queue and its tokens?')) return;
     try {
       await api.deleteQueue(queueId);
-      addToast('Queue deleted', 'info');
-      await loadQueues();
+      addToast('Queue deleted successfully', 'info');
+      loadQueues();
       loadAnalytics();
     } catch (err: any) {
+      sound.playError();
       addToast(err.message || 'Failed to delete queue', 'error');
     }
   };
 
-  // Quick Demo Login
   const handleOneClickDemo = async () => {
     try {
       setLoading(true);
       const res = await api.login({
-        email: 'manager@queueflow.com',
-        password: 'password123'
+        email: 'admin@queue.demo',
+        password: 'admin'
       });
       setUser(res.user);
       addToast(`Manager: ${res.user.name}`, 'success');
       await loadQueues();
       await loadAnalytics();
     } catch (err: any) {
-      addToast(err.message || 'Demo login failed', 'error');
       setIsAuthOpen(true);
     } finally {
       setLoading(false);
@@ -255,7 +260,7 @@ export function App() {
     setQueues([]);
     setQueueDetails(null);
     setAnalytics(null);
-    addToast('Signed out', 'info');
+    addToast('Signed out of terminal', 'info');
   };
 
   const activeQueue = queues.find((q) => q.id === activeQueueId) || null;
@@ -263,19 +268,19 @@ export function App() {
   // Initial App Loading Screen
   if (isBootstrapping) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 transition-colors">
         <div className="text-center space-y-3">
-          <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center text-white font-mono font-bold mx-auto text-sm animate-pulse">
+          <div className="h-10 w-10 rounded-[var(--radius)] bg-primary text-primary-foreground flex items-center justify-center font-mono font-bold mx-auto text-sm animate-pulse shadow-md">
             Q
           </div>
-          <p className="text-xs font-mono text-slate-500">Initializing QueueFlow terminal...</p>
+          <p className="text-xs font-mono text-muted-foreground">Initializing QueueFlow terminal...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans selection:bg-slate-200">
+    <div className="min-h-screen bg-background flex flex-col text-foreground font-sans transition-colors">
       <Navbar
         user={user}
         activeTab={activeTab}
@@ -289,15 +294,15 @@ export function App() {
 
       {/* Network Connection Error Banner */}
       {networkError && (
-        <div className="bg-rose-50 border-b border-rose-200 px-4 py-2.5 text-xs text-rose-800 flex items-center justify-between">
+        <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-2.5 text-xs text-destructive flex items-center justify-between">
           <div className="flex items-center gap-2 max-w-4xl mx-auto w-full">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
             <span className="font-medium">{networkError}</span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => loadQueues(activeQueueId || undefined)}
-              className="h-6 px-2 text-[11px] bg-white border-rose-200 text-rose-700 ml-auto"
+              className="h-6 px-2 text-[11px] ml-auto"
             >
               <RefreshCw className="w-3 h-3 mr-1" />
               Retry Connection
@@ -310,16 +315,16 @@ export function App() {
         {!user ? (
           /* Utilitarian landing screen */
           <div className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 rounded-md text-xs font-mono font-medium mb-6">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-secondary text-secondary-foreground border border-border rounded-[var(--radius)] text-xs font-mono font-medium mb-6">
+              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
               Express + TypeScript + Neon Postgres
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mb-4 leading-tight">
+            <h1 className="text-3xl sm:text-5xl font-serif font-bold tracking-tight text-foreground mb-4 leading-tight">
               Queue management without the friction.
             </h1>
 
-            <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto mb-8 leading-relaxed">
+            <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto mb-8 leading-relaxed font-sans">
               Order customers in real time. Move tokens up or down. Call the next customer with one keystroke, and review wait times with live telemetry.
             </p>
 
@@ -329,7 +334,7 @@ export function App() {
                 size="lg"
                 loading={loading}
                 onClick={handleOneClickDemo}
-                className="w-full sm:w-auto h-11 px-6 font-semibold shadow-xs"
+                className="w-full sm:w-auto h-11 px-6 font-semibold shadow-sm"
               >
                 <span>Open demo terminal</span>
                 <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -338,34 +343,34 @@ export function App() {
                 variant="outline"
                 size="lg"
                 onClick={() => setIsAuthOpen(true)}
-                className="w-full sm:w-auto h-11 px-6 bg-white"
+                className="w-full sm:w-auto h-11 px-6"
               >
                 Manager sign in
               </Button>
             </div>
 
             {/* Feature specs */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-16 text-left border-t border-slate-200/80 pt-10">
-              <div className="p-4 bg-white rounded-xl border border-slate-200/80">
-                <Layers className="w-4 h-4 text-slate-700 mb-2" />
-                <h3 className="font-bold text-xs text-slate-900 mb-1">Multi-Queue Dispatch</h3>
-                <p className="text-xs text-slate-500 leading-normal">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-16 text-left border-t border-border pt-10">
+              <div className="p-5 bg-card text-card-foreground rounded-[var(--radius)] border border-border shadow-sm">
+                <Layers className="w-4 h-4 text-primary mb-2" />
+                <h3 className="font-bold text-xs text-foreground mb-1">Multi-Queue Dispatch</h3>
+                <p className="text-xs text-muted-foreground leading-normal">
                   Independent service lines with custom prefixes and automatic token numbering.
                 </p>
               </div>
 
-              <div className="p-4 bg-white rounded-xl border border-slate-200/80">
-                <Zap className="w-4 h-4 text-slate-700 mb-2" />
-                <h3 className="font-bold text-xs text-slate-900 mb-1">One-Touch Reorder</h3>
-                <p className="text-xs text-slate-500 leading-normal">
+              <div className="p-5 bg-card text-card-foreground rounded-[var(--radius)] border border-border shadow-sm">
+                <Zap className="w-4 h-4 text-primary mb-2" />
+                <h3 className="font-bold text-xs text-foreground mb-1">One-Touch Reorder</h3>
+                <p className="text-xs text-muted-foreground leading-normal">
                   Adjust position order with spring physics, priority flags, or call next with Spacebar.
                 </p>
               </div>
 
-              <div className="p-4 bg-white rounded-xl border border-slate-200/80">
-                <Clock className="w-4 h-4 text-slate-700 mb-2" />
-                <h3 className="font-bold text-xs text-slate-900 mb-1">Wait Telemetry</h3>
-                <p className="text-xs text-slate-500 leading-normal">
+              <div className="p-5 bg-card text-card-foreground rounded-[var(--radius)] border border-border shadow-sm">
+                <Clock className="w-4 h-4 text-primary mb-2" />
+                <h3 className="font-bold text-xs text-foreground mb-1">Wait Telemetry</h3>
+                <p className="text-xs text-muted-foreground leading-normal">
                   Calculate exact wait times and arrival intervals powered by Neon Lakebase Postgres.
                 </p>
               </div>

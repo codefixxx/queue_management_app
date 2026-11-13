@@ -2,7 +2,7 @@ import React from 'react';
 import clsx from 'clsx';
 
 export const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...props }) => (
-  <div className={clsx('rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xs', className)} {...props}>
+  <div className={clsx('rounded-[var(--radius)] border border-border bg-card text-card-foreground shadow-sm transition-colors', className)} {...props}>
     {children}
   </div>
 );
@@ -14,13 +14,13 @@ export const CardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ cla
 );
 
 export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({ className, children, ...props }) => (
-  <h3 className={clsx('font-semibold leading-none tracking-tight text-slate-900', className)} {...props}>
+  <h3 className={clsx('font-semibold leading-none tracking-tight text-card-foreground', className)} {...props}>
     {children}
   </h3>
 );
 
 export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({ className, children, ...props }) => (
-  <p className={clsx('text-xs text-slate-500', className)} {...props}>
+  <p className={clsx('text-xs text-muted-foreground', className)} {...props}>
     {children}
   </p>
 );
@@ -36,4 +36,3 @@ export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ cla
     {children}
   </div>
 );
-

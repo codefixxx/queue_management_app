@@ -44,7 +44,7 @@ export const Modal: React.FC<ModalProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-slate-950/40 backdrop-blur-[2px]"
+            className="fixed inset-0 bg-black/50 backdrop-blur-[2px]"
             onClick={onClose}
             aria-hidden="true"
           />
@@ -55,18 +55,18 @@ export const Modal: React.FC<ModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-            className={`relative w-full ${widthClasses[maxWidth]} bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-10`}
+            className={`relative w-full ${widthClasses[maxWidth]} bg-card text-card-foreground rounded-[var(--radius)] shadow-xl border border-border overflow-hidden z-10`}
             role="dialog"
             aria-modal="true"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 tracking-tight">{title}</h3>
-                {description && <p className="text-xs text-slate-500 mt-0.5">{description}</p>}
+                <h3 className="text-sm font-bold text-card-foreground tracking-tight">{title}</h3>
+                {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
               </div>
               <button
                 onClick={onClose}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

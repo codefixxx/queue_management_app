@@ -11,16 +11,17 @@ export const Badge: React.FC<BadgeProps> = ({
   className,
   ...props
 }) => {
-  const base = 'inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium tracking-tight border';
+  const base =
+    'inline-flex items-center rounded-sm px-2 py-0.5 text-[11px] font-medium tracking-tight border transition-colors';
 
   const variants = {
-    default: 'bg-slate-100 text-slate-800 border-slate-200',
-    secondary: 'bg-slate-50 text-slate-600 border-slate-200/80',
-    success: 'bg-emerald-50 text-emerald-800 border-emerald-200/90 font-semibold',
-    warning: 'bg-amber-50 text-amber-800 border-amber-200/90 font-semibold',
-    destructive: 'bg-rose-50 text-rose-800 border-rose-200/90',
-    outline: 'border-slate-300 text-slate-700 bg-transparent',
-    vip: 'bg-amber-100/70 text-amber-950 border-amber-300/80 font-bold'
+    default: 'bg-secondary text-secondary-foreground border-border',
+    secondary: 'bg-muted text-muted-foreground border-border',
+    success: 'bg-primary/15 text-primary border-primary/30 font-semibold',
+    warning: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 font-semibold',
+    destructive: 'bg-destructive/15 text-destructive border-destructive/30 font-semibold',
+    outline: 'border-border text-foreground bg-transparent',
+    vip: 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-500/40 font-bold'
   };
 
   return (

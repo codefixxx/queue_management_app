@@ -69,12 +69,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     >
       <div className="space-y-4">
         {/* Quick Demo Credentials Pill */}
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-3">
-          <div className="text-xs text-blue-900">
-            <span className="font-semibold block flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600 inline" /> Quick Demo Account
+        <div className="p-3 bg-secondary/80 border border-border rounded-[var(--radius)] flex items-center justify-between gap-3">
+          <div className="text-xs text-foreground">
+            <span className="font-semibold flex items-center gap-1 text-primary">
+              <Sparkles className="w-3.5 h-3.5 inline" /> Quick Demo Account
             </span>
-            <span className="text-blue-700 text-[11px]">manager@queueflow.com (password123)</span>
+            <span className="text-muted-foreground text-[11px] font-mono">manager@queueflow.com (password123)</span>
           </div>
           <Button
             type="button"
@@ -89,7 +89,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         </div>
 
         {error && (
-          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg">
+          <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-[var(--radius)]">
             {error}
           </div>
         )}
@@ -97,49 +97,49 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         <form onSubmit={handleSubmit} className="space-y-3.5">
           {mode === 'register' && (
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">Manager Full Name</label>
+              <label className="block text-xs font-medium text-foreground mb-1">Manager Full Name</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Sarah Jenkins"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Email Address</label>
+            <label className="block text-xs font-medium text-foreground mb-1">Email Address</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="manager@example.com"
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Password</label>
+            <label className="block text-xs font-medium text-foreground mb-1">Password</label>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
             />
           </div>
 
-          <Button type="submit" variant="primary" className="w-full" loading={loading}>
+          <Button type="submit" variant="primary" className="w-full font-semibold shadow-sm" loading={loading}>
             <ShieldCheck className="w-4 h-4 mr-1.5" />
             {mode === 'login' ? 'Sign In' : 'Create Account'}
           </Button>
         </form>
 
-        <div className="pt-2 text-center text-xs text-slate-500 border-t border-slate-100">
+        <div className="pt-2 text-center text-xs text-muted-foreground border-t border-border">
           {mode === 'login' ? (
             <>
               Don't have an account?{' '}
@@ -149,7 +149,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                   setMode('register');
                   setError(null);
                 }}
-                className="text-blue-600 font-semibold hover:underline cursor-pointer"
+                className="text-primary font-semibold hover:underline cursor-pointer"
               >
                 Register as Manager
               </button>
@@ -163,7 +163,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                   setMode('login');
                   setError(null);
                 }}
-                className="text-blue-600 font-semibold hover:underline cursor-pointer"
+                className="text-primary font-semibold hover:underline cursor-pointer"
               >
                 Sign In
               </button>
@@ -174,4 +174,3 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     </Modal>
   );
 };
-

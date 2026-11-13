@@ -34,20 +34,20 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
   }, [toast.id, onDismiss]);
 
   const icons = {
-    success: <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />,
-    error: <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />,
-    info: <Info className="w-4 h-4 text-blue-500 shrink-0" />
+    success: <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />,
+    error: <AlertCircle className="w-4 h-4 text-destructive shrink-0" />,
+    info: <Info className="w-4 h-4 text-primary shrink-0" />
   };
 
   const borders = {
-    success: 'border-emerald-200 bg-white text-slate-800 shadow-lg',
-    error: 'border-rose-200 bg-white text-slate-800 shadow-lg',
-    info: 'border-blue-200 bg-white text-slate-800 shadow-lg'
+    success: 'border-primary/30 bg-card text-foreground shadow-md',
+    error: 'border-destructive/30 bg-card text-foreground shadow-md',
+    info: 'border-border bg-card text-foreground shadow-md'
   };
 
   return (
     <div
-      className={`pointer-events-auto flex items-center justify-between gap-3 p-3.5 rounded-xl border text-xs font-medium transition-all animate-in slide-in-from-bottom-2 ${borders[toast.type]}`}
+      className={`pointer-events-auto flex items-center justify-between gap-3 p-3.5 rounded-[var(--radius)] border text-xs font-medium transition-all animate-in slide-in-from-bottom-2 ${borders[toast.type]}`}
     >
       <div className="flex items-center gap-2.5">
         {icons[toast.type]}
@@ -55,11 +55,10 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
       </div>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="p-1 text-slate-400 hover:text-slate-600 rounded-md cursor-pointer"
+        className="p-1 text-muted-foreground hover:text-foreground rounded cursor-pointer"
       >
         <X className="w-3.5 h-3.5" />
       </button>
     </div>
   );
 };
-

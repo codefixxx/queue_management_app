@@ -32,6 +32,15 @@ interface AnalyticsDashboardProps {
   onRefresh: (queueId?: string) => void;
 }
 
+// Map theme chart colors to hex / oklch compatible shades
+const THEME_COLORS = {
+  chart1: '#10b981', // emerald (oklch 0.7624 0.1544 159.3551)
+  chart2: '#06b6d4', // cyan/teal (oklch 0.6959 0.1491 162.4796)
+  chart3: '#3b82f6', // blue (oklch 0.6231 0.1880 259.8145)
+  chart4: '#f59e0b', // amber (oklch 0.7686 0.1647 70.0804)
+  chart5: '#8b5cf6'  // violet (oklch 0.5854 0.2041 277.1173)
+};
+
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   analytics,
   queues,
@@ -51,23 +60,33 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
   const { summary, hourlyTrends, statusDistribution, waitTimeBuckets, queueComparison } = analytics;
 
+  // Adapt status distribution colors to match theme palette
+  const themedStatusDistribution = statusDistribution.map((item) => {
+    let color = THEME_COLORS.chart1;
+    if (item.name === 'Waiting') color = THEME_COLORS.chart4;
+    else if (item.name === 'In Service') color = THEME_COLORS.chart3;
+    else if (item.name === 'Completed') color = THEME_COLORS.chart1;
+    else if (item.name === 'Cancelled') color = '#ef4444';
+    return { ...item, color };
+  });
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
       {/* Scope Filter Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-border">
         <div>
-          <h1 className="text-lg font-bold text-slate-900 tracking-tight">Queue Performance Metrics</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h1 className="text-xl font-serif font-bold text-foreground tracking-tight">Queue Performance Metrics</h1>
+          <p className="text-xs text-muted-foreground mt-0.5 font-sans">
             Operational wait times, hourly check-in volume, and service throughput.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="text-xs font-medium text-slate-500">Filter:</label>
+          <label className="text-xs font-medium text-muted-foreground">Filter:</label>
           <select
             value={selectedQueueFilter}
             onChange={(e) => handleFilterChange(e.target.value)}
-            className="text-xs font-semibold px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white shadow-2xs focus:outline-none focus:ring-1 focus:ring-slate-900"
+            className="text-xs font-semibold px-2.5 py-1.5 border border-border rounded-[var(--radius)] bg-card text-foreground shadow-2xs focus:outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="all">All Queues Combined</option>
             {queues.map((q) => (
@@ -79,65 +98,65 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         </div>
       </div>
 
-      {/* KPI Cards (Un-slopped: clean borders, crisp numbers, calm text) */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <Card>
           <CardHeader className="p-4 pb-2">
-            <div className="flex items-center justify-between text-slate-500 text-xs">
+            <div className="flex items-center justify-between text-muted-foreground text-xs font-sans">
               <span>Avg Wait Time</span>
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <Clock className="w-3.5 h-3.5 text-primary" />
             </div>
-            <div className="text-2xl font-bold font-mono tracking-tight text-slate-900 mt-1">
-              {summary.avgWaitTimeMinutes} <span className="text-xs font-normal text-slate-500">mins</span>
+            <div className="text-2xl font-bold font-mono tracking-tight text-foreground mt-1">
+              {summary.avgWaitTimeMinutes} <span className="text-xs font-normal text-muted-foreground font-sans">mins</span>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
-            <p className="text-[11px] text-slate-400">Creation to service counter</p>
+            <p className="text-[11px] text-muted-foreground">Creation to service counter</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="p-4 pb-2">
-            <div className="flex items-center justify-between text-slate-500 text-xs">
+            <div className="flex items-center justify-between text-muted-foreground text-xs font-sans">
               <span>Avg Service Time</span>
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <Clock className="w-3.5 h-3.5 text-primary" />
             </div>
-            <div className="text-2xl font-bold font-mono tracking-tight text-slate-900 mt-1">
-              {summary.avgServiceTimeMinutes} <span className="text-xs font-normal text-slate-500">mins</span>
+            <div className="text-2xl font-bold font-mono tracking-tight text-foreground mt-1">
+              {summary.avgServiceTimeMinutes} <span className="text-xs font-normal text-muted-foreground font-sans">mins</span>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
-            <p className="text-[11px] text-slate-400">Active time at station</p>
+            <p className="text-[11px] text-muted-foreground">Active time at station</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="p-4 pb-2">
-            <div className="flex items-center justify-between text-slate-500 text-xs">
+            <div className="flex items-center justify-between text-muted-foreground text-xs font-sans">
               <span>Active in Line</span>
-              <Users className="w-3.5 h-3.5 text-slate-400" />
+              <Users className="w-3.5 h-3.5 text-primary" />
             </div>
-            <div className="text-2xl font-bold font-mono tracking-tight text-slate-900 mt-1">
-              {summary.waitingCount} <span className="text-xs font-normal text-slate-500">tickets</span>
+            <div className="text-2xl font-bold font-mono tracking-tight text-foreground mt-1">
+              {summary.waitingCount} <span className="text-xs font-normal text-muted-foreground font-sans">tickets</span>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
-            <p className="text-[11px] text-slate-400">{summary.inServiceCount} currently being served</p>
+            <p className="text-[11px] text-muted-foreground">{summary.inServiceCount} currently being served</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="p-4 pb-2">
-            <div className="flex items-center justify-between text-slate-500 text-xs">
+            <div className="flex items-center justify-between text-muted-foreground text-xs font-sans">
               <span>Completion Rate</span>
-              <CheckCircle className="w-3.5 h-3.5 text-slate-400" />
+              <CheckCircle className="w-3.5 h-3.5 text-primary" />
             </div>
-            <div className="text-2xl font-bold font-mono tracking-tight text-slate-900 mt-1">
+            <div className="text-2xl font-bold font-mono tracking-tight text-foreground mt-1">
               {summary.completionRate}%
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
-            <p className="text-[11px] text-slate-400">{summary.completedCount} tickets closed</p>
+            <p className="text-[11px] text-muted-foreground">{summary.completedCount} tickets closed</p>
           </CardContent>
         </Card>
       </div>
@@ -146,9 +165,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Hourly Flow Chart */}
         <Card className="lg:col-span-2">
-          <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between">
-            <CardTitle className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-slate-500" />
+          <CardHeader className="py-3 px-4 border-b border-border flex flex-row items-center justify-between">
+            <CardTitle className="text-xs font-serif font-bold text-foreground flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-primary" />
               Hourly Customer Flow (Arrivals vs Served)
             </CardTitle>
           </CardHeader>
@@ -156,16 +175,16 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={hourlyTrends} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="hour" tick={{ fontSize: 11, fill: '#64748b' }} />
-                  <YAxis tick={{ fontSize: 11, fill: '#64748b' }} allowDecimals={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.6} />
+                  <XAxis dataKey="hour" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} allowDecimals={false} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#0f172a',
-                      borderRadius: '6px',
-                      color: '#ffffff',
-                      fontSize: '11px',
-                      border: 'none'
+                      backgroundColor: 'var(--card)',
+                      borderColor: 'var(--border)',
+                      borderRadius: 'var(--radius)',
+                      color: 'var(--foreground)',
+                      fontSize: '11px'
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
@@ -173,18 +192,18 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     type="monotone"
                     dataKey="arrivals"
                     name="Arrivals"
-                    stroke="#2563eb"
-                    fill="#3b82f6"
-                    fillOpacity={0.15}
+                    stroke={THEME_COLORS.chart3}
+                    fill={THEME_COLORS.chart3}
+                    fillOpacity={0.2}
                     strokeWidth={1.5}
                   />
                   <Area
                     type="monotone"
                     dataKey="served"
                     name="Served"
-                    stroke="#059669"
-                    fill="#10b981"
-                    fillOpacity={0.15}
+                    stroke={THEME_COLORS.chart1}
+                    fill={THEME_COLORS.chart1}
+                    fillOpacity={0.25}
                     strokeWidth={1.5}
                   />
                 </AreaChart>
@@ -195,41 +214,42 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
         {/* Status Distribution */}
         <Card>
-          <CardHeader className="py-3 px-4 border-b border-slate-100">
-            <CardTitle className="text-xs font-semibold text-slate-800">Status Breakdown</CardTitle>
+          <CardHeader className="py-3 px-4 border-b border-border">
+            <CardTitle className="text-xs font-serif font-bold text-foreground">Status Breakdown</CardTitle>
           </CardHeader>
           <CardContent className="p-4">
             <div className="h-48 w-full flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={statusDistribution}
+                    data={themedStatusDistribution}
                     innerRadius={45}
                     outerRadius={70}
                     paddingAngle={3}
                     dataKey="value"
                   >
-                    {statusDistribution.map((entry, index) => (
+                    {themedStatusDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#0f172a',
-                      borderRadius: '6px',
-                      color: '#ffffff',
+                      backgroundColor: 'var(--card)',
+                      borderColor: 'var(--border)',
+                      borderRadius: 'var(--radius)',
+                      color: 'var(--foreground)',
                       fontSize: '11px'
                     }}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
-              {statusDistribution.map((item) => (
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border text-xs">
+              {themedStatusDistribution.map((item) => (
                 <div key={item.name} className="flex items-center gap-1.5">
                   <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                  <span className="text-slate-500">{item.name}:</span>
-                  <span className="font-mono font-semibold text-slate-800">{item.value}</span>
+                  <span className="text-muted-foreground">{item.name}:</span>
+                  <span className="font-mono font-semibold text-foreground">{item.value}</span>
                 </div>
               ))}
             </div>
@@ -241,8 +261,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Wait Time Buckets */}
         <Card>
-          <CardHeader className="py-3 px-4 border-b border-slate-100">
-            <CardTitle className="text-xs font-semibold text-slate-800">
+          <CardHeader className="py-3 px-4 border-b border-border">
+            <CardTitle className="text-xs font-serif font-bold text-foreground">
               Customer Wait Time Distribution
             </CardTitle>
           </CardHeader>
@@ -250,18 +270,19 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={waitTimeBuckets} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="range" tick={{ fontSize: 11, fill: '#64748b' }} />
-                  <YAxis tick={{ fontSize: 11, fill: '#64748b' }} allowDecimals={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.6} />
+                  <XAxis dataKey="range" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} allowDecimals={false} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#0f172a',
-                      borderRadius: '6px',
-                      color: '#ffffff',
+                      backgroundColor: 'var(--card)',
+                      borderColor: 'var(--border)',
+                      borderRadius: 'var(--radius)',
+                      color: 'var(--foreground)',
                       fontSize: '11px'
                     }}
                   />
-                  <Bar dataKey="count" name="Customers" fill="#475569" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" name="Customers" fill={THEME_COLORS.chart1} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -270,16 +291,16 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
         {/* Queue Comparison Table */}
         <Card>
-          <CardHeader className="py-3 px-4 border-b border-slate-100">
-            <CardTitle className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-slate-500" />
+          <CardHeader className="py-3 px-4 border-b border-border">
+            <CardTitle className="text-xs font-serif font-bold text-foreground flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-primary" />
               Line-by-Line Throughput
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-500 border-b border-slate-100">
+                <thead className="bg-secondary text-muted-foreground border-b border-border">
                   <tr>
                     <th className="py-2 px-3 font-medium">Queue</th>
                     <th className="py-2 px-2 text-center font-medium">Waiting</th>
@@ -288,25 +309,25 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     <th className="py-2 px-3 text-right font-medium">Avg Wait</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {queueComparison.map((qc) => (
-                    <tr key={qc.id} className="hover:bg-slate-50/60">
-                      <td className="py-2.5 px-3 font-medium text-slate-900">
-                        <span className="font-mono text-[10px] bg-slate-100 px-1 py-0.5 rounded mr-1.5 font-bold">
+                    <tr key={qc.id} className="hover:bg-muted/40 transition-colors">
+                      <td className="py-2.5 px-3 font-medium text-foreground">
+                        <span className="font-mono text-[10px] bg-secondary border border-border px-1 py-0.5 rounded mr-1.5 font-bold">
                           {qc.prefix}
                         </span>
                         {qc.name}
                       </td>
-                      <td className="py-2.5 px-2 text-center font-mono font-semibold text-amber-700">
+                      <td className="py-2.5 px-2 text-center font-mono font-semibold text-amber-600 dark:text-amber-400">
                         {qc.waiting}
                       </td>
-                      <td className="py-2.5 px-2 text-center font-mono font-semibold text-blue-700">
+                      <td className="py-2.5 px-2 text-center font-mono font-semibold text-primary">
                         {qc.inService}
                       </td>
-                      <td className="py-2.5 px-2 text-center font-mono font-semibold text-emerald-700">
+                      <td className="py-2.5 px-2 text-center font-mono font-semibold text-emerald-600 dark:text-emerald-400">
                         {qc.completed}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-700">
+                      <td className="py-2.5 px-3 text-right font-mono font-medium text-foreground">
                         {qc.avgWaitMinutes}m
                       </td>
                     </tr>

@@ -54,6 +54,10 @@ class SoundService {
     }
   }
 
+  playChime() {
+    this.playCallChime();
+  }
+
   playTick() {
     if (!this.enabled) return;
     try {
@@ -76,7 +80,30 @@ class SoundService {
       // Audio autoplay policy fallback
     }
   }
+
+  playError() {
+    if (!this.enabled) return;
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(160, now + 0.18);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.22);
+    } catch {
+      // Audio autoplay policy fallback
+    }
+  }
 }
 
 export const sound = new SoundService();
-

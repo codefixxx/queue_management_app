@@ -16,21 +16,28 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const base = 'inline-flex items-center justify-center font-medium transition-all duration-120 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-1 disabled:opacity-40 disabled:pointer-events-none select-none rounded-lg cursor-pointer active:scale-[0.985]';
+  const base =
+    'inline-flex items-center justify-center font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none select-none rounded-[var(--radius)] cursor-pointer active:scale-[0.985]';
 
   const variants = {
-    primary: 'bg-slate-900 text-white hover:bg-slate-800 shadow-xs border border-slate-900',
-    secondary: 'bg-slate-100 text-slate-800 hover:bg-slate-200/80 border border-slate-200/80',
-    outline: 'border border-slate-300/90 bg-white text-slate-700 hover:bg-slate-50 shadow-2xs',
-    destructive: 'bg-rose-600 text-white hover:bg-rose-700 border border-rose-600 shadow-xs',
-    ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
-    success: 'bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 shadow-xs'
+    primary:
+      'bg-primary text-primary-foreground hover:opacity-90 shadow-sm border border-primary font-semibold',
+    secondary:
+      'bg-secondary text-secondary-foreground hover:bg-muted border border-border',
+    outline:
+      'border border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground shadow-2xs',
+    destructive:
+      'bg-destructive text-destructive-foreground hover:opacity-90 border border-destructive shadow-xs font-semibold',
+    ghost:
+      'text-muted-foreground hover:bg-muted hover:text-foreground',
+    success:
+      'bg-primary text-primary-foreground hover:opacity-90 border border-primary shadow-xs font-semibold'
   };
 
   const sizes = {
     sm: 'h-8 px-2.5 text-xs gap-1.5',
     md: 'h-9 px-3.5 text-xs font-semibold gap-2',
-    lg: 'h-10.5 px-5 text-sm font-semibold gap-2.5',
+    lg: 'h-10 px-5 text-sm font-semibold gap-2.5',
     icon: 'h-8.5 w-8.5 p-0'
   };
 
