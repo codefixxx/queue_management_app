@@ -5,6 +5,7 @@ import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
 import { Skeleton } from './ui/Skeleton';
+import { QueueBoardSkeleton } from './ui/Skeletons';
 import {
   ChevronUp,
   ChevronDown,
@@ -98,6 +99,10 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
     const mins = Math.max(0, Math.floor(diffMs / (1000 * 60)));
     return `${mins}m`;
   };
+
+  if (loading && (queues.length === 0 || !queueDetails)) {
+    return <QueueBoardSkeleton />;
+  }
 
   if (queues.length === 0) {
     return (

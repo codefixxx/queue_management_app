@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AnalyticsData, QueueSummary } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
+import { AnalyticsSkeleton } from './ui/Skeletons';
 import {
   Clock,
   Users,
@@ -44,21 +45,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     onRefresh(val === 'all' ? undefined : val);
   };
 
-  if (!analytics && loading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <div className="animate-spin h-6 w-6 border-2 border-slate-900 border-t-transparent rounded-full mx-auto mb-3" />
-        <p className="text-xs text-slate-500 font-mono">Aggregating wait-time telemetry...</p>
-      </div>
-    );
-  }
-
-  if (!analytics) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-xs text-slate-500 font-mono">
-        No metrics available.
-      </div>
-    );
+  if (loading || !analytics) {
+    return <AnalyticsSkeleton />;
   }
 
   const { summary, hourlyTrends, statusDistribution, waitTimeBuckets, queueComparison } = analytics;

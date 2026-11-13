@@ -410,6 +410,7 @@ export function App() {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         onSuccess={(u) => {
+          setLoading(true);
           setUser(u);
           addToast(`Manager: ${u.name}`, 'success');
           loadQueues();

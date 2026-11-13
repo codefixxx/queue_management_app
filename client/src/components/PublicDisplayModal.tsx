@@ -98,7 +98,12 @@ export const PublicDisplayModal: React.FC<PublicDisplayProps> = ({
           </span>
 
           <AnimatePresence mode="wait">
-            {inServiceToken ? (
+            {!queueDetails ? (
+              <div className="space-y-4 animate-pulse">
+                <div className="h-24 sm:h-32 w-64 bg-slate-800/80 rounded-2xl mx-auto" />
+                <div className="h-6 w-48 bg-slate-800/80 rounded mx-auto" />
+              </div>
+            ) : inServiceToken ? (
               <motion.div
                 key={inServiceToken.id}
                 initial={{ scale: 0.85, opacity: 0 }}
@@ -138,7 +143,12 @@ export const PublicDisplayModal: React.FC<PublicDisplayProps> = ({
           </div>
 
           <div className="flex-1 space-y-2 overflow-y-auto">
-            {waitingTokens.slice(0, 6).map((t, idx) => (
+            {!queueDetails ? (
+              [1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-12 bg-slate-800/60 rounded-xl animate-pulse" />
+              ))
+            ) : (
+              waitingTokens.slice(0, 6).map((t, idx) => (
               <motion.div
                 key={t.id}
                 initial={{ opacity: 0, x: 10 }}
@@ -155,9 +165,10 @@ export const PublicDisplayModal: React.FC<PublicDisplayProps> = ({
                 </div>
                 <span className="text-xs font-medium truncate max-w-[120px]">{t.customerName}</span>
               </motion.div>
-            ))}
+            ))
+            )}
 
-            {waitingTokens.length === 0 && (
+            {queueDetails && waitingTokens.length === 0 && (
               <div className="py-12 text-center text-xs text-slate-500">No customers waiting</div>
             )}
           </div>
