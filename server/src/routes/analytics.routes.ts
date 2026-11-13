@@ -1,16 +1,18 @@
 import { Router, Response } from 'express';
 import { prisma } from '../prisma';
 import { AuthRequest, requireAuth } from '../middleware/auth';
+import { sanitizeString } from '../utils/sanitize';
 
 const router = Router();
 
 router.get('/', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const managerId = req.user!.id;
-    const { queueId } = req.query;
+    const rawQueueId = req.query.queueId;
+    const cleanQueueId = typeof rawQueueId === 'string' ? sanitizeString(rawQueueId) : undefined;
 
-    const queueFilter = queueId && typeof queueId === 'string'
-      ? { id: queueId, managerId }
+    const queueFilter = cleanQueueId
+      ? { id: cleanQueueId, managerId }
       : { managerId };
 
     // Fetch user queues
@@ -158,10 +160,9 @@ router.get('/', requireAuth, async (req: AuthRequest, res: Response): Promise<vo
       waitTimeBuckets
     });
   } catch (error) {
-    console.error('Analytics fetch error:', error);
-    res.status(500).json({ error: 'Failed to generate analytics' });
+    console.error('Analytics error:', error);
+    res.status(500).json({ error: 'Failed to retrieve analytics' });
   }
 });
 
 export default router;
-

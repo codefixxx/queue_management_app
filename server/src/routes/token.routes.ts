@@ -2,23 +2,31 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../prisma';
 import { AuthRequest, requireAuth } from '../middleware/auth';
+import { tokenCreationLimiter } from '../middleware/rateLimiter';
+import { sanitizedString, optionalSanitizedString } from '../utils/sanitize';
 
 const router = Router();
 
-function getParam(param: string | string[] | undefined): string {
-  if (Array.isArray(param)) return param[0];
-  return param || '';
+function getCleanParam(param: string | string[] | undefined): string {
+  if (Array.isArray(param)) return param[0]?.trim() || '';
+  return typeof param === 'string' ? param.trim() : '';
 }
 
 const createTokenSchema = z.object({
-  customerName: z.string().min(1, 'Customer name is required'),
-  customerPhone: z.string().optional(),
-  notes: z.string().optional(),
+  customerName: sanitizedString(1, 100),
+  customerPhone: z
+    .string()
+    .trim()
+    .max(25, 'Phone number must be at most 25 characters')
+    .regex(/^[+0-9\s\-()]*$/, 'Phone number contains invalid characters')
+    .optional()
+    .transform((val) => (val && val.length > 0 ? val : undefined)),
+  notes: optionalSanitizedString(500),
   priority: z.enum(['NORMAL', 'VIP']).default('NORMAL')
 });
 
 const cancelTokenSchema = z.object({
-  reason: z.string().optional()
+  reason: optionalSanitizedString(300)
 });
 
 // Helper to normalize waiting token positions for a queue
@@ -40,9 +48,13 @@ async function normalizeWaitingPositions(tx: any, queueId: string) {
 }
 
 // Requirement 3: Add new person / token into the queue
-router.post('/queues/:queueId/tokens', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/queues/:queueId/tokens', requireAuth, tokenCreationLimiter, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const queueId = getParam(req.params.queueId);
+    const queueId = getCleanParam(req.params.queueId);
+    if (!queueId) {
+      res.status(400).json({ error: 'Queue ID is required' });
+      return;
+    }
     const validated = createTokenSchema.parse(req.body);
 
     // Verify queue exists and belongs to manager
@@ -106,7 +118,11 @@ router.post('/queues/:queueId/tokens', requireAuth, async (req: AuthRequest, res
 // Requirement 5: Move token UP in the queue
 router.post('/tokens/:id/move-up', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const tokenId = getParam(req.params.id);
+    const tokenId = getCleanParam(req.params.id);
+    if (!tokenId) {
+      res.status(400).json({ error: 'Token ID is required' });
+      return;
+    }
 
     // Find token with queue verification
     const token = await prisma.token.findUnique({
@@ -186,7 +202,11 @@ router.post('/tokens/:id/move-up', requireAuth, async (req: AuthRequest, res: Re
 // Requirement 5: Move token DOWN in the queue
 router.post('/tokens/:id/move-down', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const tokenId = getParam(req.params.id);
+    const tokenId = getCleanParam(req.params.id);
+    if (!tokenId) {
+      res.status(400).json({ error: 'Token ID is required' });
+      return;
+    }
 
     const token = await prisma.token.findUnique({
       where: { id: tokenId },
@@ -266,7 +286,11 @@ router.post('/tokens/:id/move-down', requireAuth, async (req: AuthRequest, res: 
 // Requirement 7: Cancel a token from the queue
 router.post('/tokens/:id/cancel', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const tokenId = getParam(req.params.id);
+    const tokenId = getCleanParam(req.params.id);
+    if (!tokenId) {
+      res.status(400).json({ error: 'Token ID is required' });
+      return;
+    }
     const validated = cancelTokenSchema.parse(req.body);
 
     const token = await prisma.token.findUnique({
@@ -318,7 +342,11 @@ router.post('/tokens/:id/cancel', requireAuth, async (req: AuthRequest, res: Res
 // Complete a token currently in service
 router.post('/tokens/:id/complete', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const tokenId = getParam(req.params.id);
+    const tokenId = getCleanParam(req.params.id);
+    if (!tokenId) {
+      res.status(400).json({ error: 'Token ID is required' });
+      return;
+    }
 
     const token = await prisma.token.findUnique({
       where: { id: tokenId },

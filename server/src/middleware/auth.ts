@@ -1,7 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-export const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-queue-key-2026';
+const DEFAULT_DEV_SECRET = 'super-secret-queue-management-key-2026-production-grade';
+
+// Enforce strong JWT secret in production
+if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET === DEFAULT_DEV_SECRET)) {
+  console.error('[SECURITY WARNING] Insecure or missing JWT_SECRET in production environment! Set a strong JWT_SECRET.');
+}
+
+export const JWT_SECRET = process.env.JWT_SECRET || DEFAULT_DEV_SECRET;
 
 export interface AuthRequest extends Request {
   user?: {
@@ -15,13 +22,17 @@ export interface AuthRequest extends Request {
 export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Unauthorized: Missing or invalid token' });
+    res.status(401).json({
+      error: 'Unauthorized: Missing or malformed authorization header',
+      code: 'UNAUTHORIZED'
+    });
     return;
   }
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as {
+    // Explicitly pin algorithm to HS256 to prevent algorithm confusion attacks
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as {
       id: string;
       email: string;
       name: string;
@@ -29,8 +40,11 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
     };
     req.user = decoded;
     next();
-  } catch (error) {
-    res.status(401).json({ error: 'Unauthorized: Token expired or invalid' });
+  } catch (error: any) {
+    if (error.name === 'TokenExpiredError') {
+      res.status(401).json({ error: 'Session expired. Please log in again.', code: 'TOKEN_EXPIRED' });
+      return;
+    }
+    res.status(401).json({ error: 'Unauthorized: Invalid token signature', code: 'INVALID_TOKEN' });
   }
 };
-

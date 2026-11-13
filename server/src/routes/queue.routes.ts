@@ -2,24 +2,35 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../prisma';
 import { AuthRequest, requireAuth } from '../middleware/auth';
+import { sanitizedString, optionalSanitizedString } from '../utils/sanitize';
 
 const router = Router();
 
 const createQueueSchema = z.object({
-  name: z.string().min(2, 'Queue name must be at least 2 characters'),
-  description: z.string().optional(),
-  prefix: z.string().max(4, 'Prefix must be at most 4 characters').default('Q')
+  name: sanitizedString(2, 100),
+  description: optionalSanitizedString(500),
+  prefix: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9]{1,4}$/, 'Prefix must be 1 to 4 alphanumeric characters')
+    .transform((s) => s.toUpperCase())
+    .default('Q')
 });
 
 const updateQueueSchema = z.object({
-  name: z.string().min(2).optional(),
-  description: z.string().optional(),
-  prefix: z.string().max(4).optional()
+  name: sanitizedString(2, 100).optional(),
+  description: optionalSanitizedString(500),
+  prefix: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9]{1,4}$/, 'Prefix must be 1 to 4 alphanumeric characters')
+    .transform((s) => s.toUpperCase())
+    .optional()
 });
 
-function getParam(param: string | string[] | undefined): string {
-  if (Array.isArray(param)) return param[0];
-  return param || '';
+function getCleanParam(param: string | string[] | undefined): string {
+  if (Array.isArray(param)) return param[0]?.trim() || '';
+  return typeof param === 'string' ? param.trim() : '';
 }
 
 // List all queues for the manager
@@ -80,7 +91,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response): Promise<v
       data: {
         name: validated.name,
         description: validated.description,
-        prefix: validated.prefix.toUpperCase(),
+        prefix: validated.prefix,
         managerId: req.user!.id
       }
     });
@@ -105,7 +116,11 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response): Promise<v
 // Get single queue with waiting tokens & current in-service tokens
 router.get('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const queueId = getParam(req.params.id);
+    const queueId = getCleanParam(req.params.id);
+    if (!queueId) {
+      res.status(400).json({ error: 'Queue ID is required' });
+      return;
+    }
 
     const queue = await prisma.queue.findFirst({
       where: { id: queueId, managerId: req.user!.id },
@@ -173,7 +188,11 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise
 // Update queue
 router.put('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const queueId = getParam(req.params.id);
+    const queueId = getCleanParam(req.params.id);
+    if (!queueId) {
+      res.status(400).json({ error: 'Queue ID is required' });
+      return;
+    }
     const validated = updateQueueSchema.parse(req.body);
 
     const existing = await prisma.queue.findFirst({
@@ -190,7 +209,7 @@ router.put('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise
       data: {
         ...(validated.name && { name: validated.name }),
         ...(validated.description !== undefined && { description: validated.description }),
-        ...(validated.prefix && { prefix: validated.prefix.toUpperCase() })
+        ...(validated.prefix && { prefix: validated.prefix })
       }
     });
 
@@ -207,7 +226,11 @@ router.put('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise
 // Delete queue
 router.delete('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const queueId = getParam(req.params.id);
+    const queueId = getCleanParam(req.params.id);
+    if (!queueId) {
+      res.status(400).json({ error: 'Queue ID is required' });
+      return;
+    }
 
     const existing = await prisma.queue.findFirst({
       where: { id: queueId, managerId: req.user!.id }
@@ -231,7 +254,11 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res: Response): Prom
 // Requirement 6: Assign top token in the queue for service [With a simple button click]
 router.post('/:id/serve-next', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const queueId = getParam(req.params.id);
+    const queueId = getCleanParam(req.params.id);
+    if (!queueId) {
+      res.status(400).json({ error: 'Queue ID is required' });
+      return;
+    }
 
     // Verify ownership
     const queue = await prisma.queue.findFirst({
