@@ -4,7 +4,7 @@ import { Button } from './ui/Button';
 import { Maximize2, Minimize2, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface PublicDisplayProps {
+export interface PublicDisplayProps {
   queues: QueueSummary[];
   activeQueueId: string | null;
   queueDetails: QueueDetails | null;
@@ -178,3 +178,5 @@ export const PublicDisplayModal: React.FC<PublicDisplayProps> = ({
     </div>
   );
 };
+
+export default PublicDisplayModal;
