@@ -85,11 +85,11 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
   const formatWaitTime = (createdAt: string) => {
     const diffMs = Date.now() - new Date(createdAt).getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
-    if (diffMins < 1) return 'Just added';
-    if (diffMins === 1) return '1m in line';
-    if (diffMins < 60) return `${diffMins}m in line`;
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m wait`;
     const diffHours = Math.floor(diffMins / 60);
-    return `${diffHours}h ${diffMins % 60}m in line`;
+    const remMins = diffMins % 60;
+    return remMins > 0 ? `${diffHours}h ${remMins}m` : `${diffHours}h wait`;
   };
 
   const formatDuration = (start: string | null | undefined, end: string | null | undefined) => {
@@ -140,7 +140,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                     : 'bg-card text-foreground border border-border hover:bg-muted'
                 }`}
               >
-                <span className="truncate max-w-[120px] sm:max-w-none">{q.name}</span>
+                <span className="whitespace-nowrap">{q.name}</span>
                 <span
                   className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${
                     isSelected ? 'bg-primary-foreground/20 text-primary-foreground font-bold' : 'bg-secondary text-muted-foreground'
@@ -338,89 +338,100 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ type: 'spring', damping: 28, stiffness: 420 }}
-                      className={`flex items-center justify-between gap-2.5 sm:gap-3 p-3 sm:p-3.5 transition-colors ${
+                      className={`p-3 sm:p-3.5 transition-colors ${
                         isTop ? 'bg-primary/5' : 'hover:bg-muted/50'
                       }`}
                     >
-                      {/* Ticket Info */}
-                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                        <span
-                          className={`font-mono text-xs font-semibold px-1.5 sm:px-2 py-0.5 rounded-[var(--radius)] shrink-0 ${
-                            isTop
-                              ? 'bg-primary/15 text-primary border border-primary/30 font-bold'
-                              : 'bg-secondary text-muted-foreground'
-                          }`}
-                        >
-                          #{token.position}
-                        </span>
+                      {/* Top Row: Token ID, Name, Badges, and Action Buttons */}
+                      <div className="flex items-center justify-between gap-2">
+                        {/* Token Number & Customer Identity */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                          <span
+                            className={`font-mono text-xs font-semibold px-1.5 sm:px-2 py-0.5 rounded-[var(--radius)] shrink-0 ${
+                              isTop
+                                ? 'bg-primary/15 text-primary border border-primary/30 font-bold'
+                                : 'bg-secondary text-muted-foreground'
+                            }`}
+                          >
+                            #{token.position}
+                          </span>
 
-                        <div className="font-mono font-bold text-xs sm:text-sm bg-foreground text-background px-2 sm:px-2.5 py-1 rounded-[var(--radius)] tracking-tight shrink-0 shadow-2xs">
-                          {token.tokenNumber}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                            <span className="text-xs sm:text-sm font-bold text-foreground truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[260px] md:max-w-[360px]">{token.customerName}</span>
-                            {isTop && (
-                              <span className="text-[10px] text-primary bg-primary/15 px-1.5 py-0.2 rounded font-semibold border border-primary/25 shrink-0">
-                                Next
-                              </span>
-                            )}
-                            {token.priority === 'VIP' && <Badge variant="vip" className="shrink-0 text-[10px] px-1.5 py-0">VIP</Badge>}
+                          <div className="font-mono font-bold text-xs sm:text-sm bg-foreground text-background px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-[var(--radius)] tracking-tight shrink-0 shadow-2xs">
+                            {token.tokenNumber}
                           </div>
-                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
-                            {token.customerPhone && (
-                              <span className="flex items-center gap-1 font-mono text-[10px] sm:text-xs">
-                                <Phone className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
-                                {token.customerPhone}
-                              </span>
-                            )}
-                            <span className="font-mono text-[10px] sm:text-xs flex items-center gap-1">
-                              <Clock className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
-                              {formatWaitTime(token.createdAt)}
+
+                          <span className="text-xs sm:text-sm font-bold text-foreground truncate min-w-0">
+                            {token.customerName}
+                          </span>
+
+                          {isTop && (
+                            <span className="text-[10px] text-primary bg-primary/15 px-1.5 py-0.2 rounded font-semibold border border-primary/25 shrink-0">
+                              Next
                             </span>
-                            {token.notes && (
-                              <>
-                                <span>•</span>
-                                <span className="truncate max-w-[110px] xs:max-w-[160px] sm:max-w-[240px] md:max-w-[320px]">{token.notes}</span>
-                              </>
-                            )}
-                          </div>
+                          )}
+                          {token.priority === 'VIP' && (
+                            <Badge variant="vip" className="shrink-0 text-[10px] px-1.5 py-0">
+                              VIP
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Controls (Move Up, Move Down, Cancel) */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            disabled={isTop}
+                            onClick={() => handleAction(`up-${token.id}`, () => onMoveUp(token.id))}
+                            title="Move up in line"
+                            className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-[var(--radius)] bg-secondary text-secondary-foreground hover:bg-muted border border-border flex items-center justify-center disabled:opacity-25 disabled:pointer-events-none transition-colors cursor-pointer"
+                            aria-label="Move up in line"
+                          >
+                            <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={isBottom}
+                            onClick={() => handleAction(`down-${token.id}`, () => onMoveDown(token.id))}
+                            title="Move down in line"
+                            className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-[var(--radius)] bg-secondary text-secondary-foreground hover:bg-muted border border-border flex items-center justify-center disabled:opacity-25 disabled:pointer-events-none transition-colors cursor-pointer"
+                            aria-label="Move down in line"
+                          >
+                            <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => onOpenCancel(token)}
+                            title="Cancel token"
+                            className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-[var(--radius)] text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center justify-center transition-colors cursor-pointer"
+                            aria-label="Cancel token"
+                          >
+                            <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          </button>
                         </div>
                       </div>
 
-                      {/* Controls (Move Up, Move Down, Cancel) - Touch-friendly targets */}
-                      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          disabled={isTop}
-                          onClick={() => handleAction(`up-${token.id}`, () => onMoveUp(token.id))}
-                          title="Move up in line"
-                          className="h-9 w-9 sm:h-8 sm:w-8 rounded-[var(--radius)] bg-secondary text-secondary-foreground hover:bg-muted border border-border flex items-center justify-center disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-                        >
-                          <ChevronUp className="w-4 h-4" />
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={isBottom}
-                          onClick={() => handleAction(`down-${token.id}`, () => onMoveDown(token.id))}
-                          title="Move down in line"
-                          className="h-9 w-9 sm:h-8 sm:w-8 rounded-[var(--radius)] bg-secondary text-secondary-foreground hover:bg-muted border border-border flex items-center justify-center disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
-                        >
-                          <ChevronDown className="w-4 h-4" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => onOpenCancel(token)}
-                          title="Cancel token"
-                          className="h-9 w-9 sm:h-8 sm:w-8 rounded-[var(--radius)] text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center justify-center transition-colors cursor-pointer"
-                          aria-label="Cancel token"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
+                      {/* Bottom Row: Metadata Strip (Phone, Wait Time, Notes) */}
+                      {(token.customerPhone || token.notes || token.createdAt) && (
+                        <div className="flex items-center gap-2.5 sm:gap-3 text-[11px] text-muted-foreground mt-1.5 pl-0.5 flex-wrap">
+                          {token.customerPhone && (
+                            <span className="flex items-center gap-1 font-mono">
+                              <Phone className="w-3 h-3 text-muted-foreground shrink-0" />
+                              <span>{token.customerPhone}</span>
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1 font-mono">
+                            <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
+                            <span>{formatWaitTime(token.createdAt)}</span>
+                          </span>
+                          {token.notes && (
+                            <span className="truncate max-w-[200px] sm:max-w-md">
+                              • {token.notes}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </motion.div>
                   );
                 })}

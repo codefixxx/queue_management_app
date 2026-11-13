@@ -54,20 +54,23 @@ export const QueueBoardSkeleton: React.FC = () => {
           {[1, 2, 3, 4, 5].map((idx) => (
             <div
               key={idx}
-              className="flex items-center justify-between p-3 border border-border rounded-md gap-2.5 bg-card"
+              className="p-3 border border-border rounded-md bg-card space-y-2"
             >
-              <div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
-                <Skeleton className="h-6 w-6 sm:w-7 rounded shrink-0" />
-                <Skeleton className="h-7 w-20 sm:w-24 rounded font-mono shrink-0" />
-                <div className="space-y-1.5 min-w-0 flex-1">
-                  <Skeleton className="h-3.5 w-24 sm:w-32 rounded" />
-                  <Skeleton className="h-2.5 w-16 sm:w-20 rounded" />
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <Skeleton className="h-6 w-6 rounded shrink-0" />
+                  <Skeleton className="h-6 w-16 sm:w-20 rounded font-mono shrink-0" />
+                  <Skeleton className="h-4 w-24 sm:w-36 rounded" />
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Skeleton className="h-7.5 w-7.5 rounded" />
+                  <Skeleton className="h-7.5 w-7.5 rounded" />
+                  <Skeleton className="h-7.5 w-7.5 rounded" />
                 </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Skeleton className="h-8 w-8 rounded" />
-                <Skeleton className="h-8 w-8 rounded" />
-                <Skeleton className="h-8 w-8 rounded" />
+              <div className="flex items-center gap-2.5">
+                <Skeleton className="h-3 w-20 rounded" />
+                <Skeleton className="h-3 w-16 rounded" />
               </div>
             </div>
           ))}
