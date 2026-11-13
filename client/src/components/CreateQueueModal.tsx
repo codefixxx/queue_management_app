@@ -68,7 +68,7 @@ export const CreateQueueModal: React.FC<CreateQueueModalProps> = ({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Technical Consultation or Counter A"
-            className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+            className="w-full px-3 py-2 text-base sm:text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
           />
         </div>
 
@@ -81,7 +81,7 @@ export const CreateQueueModal: React.FC<CreateQueueModalProps> = ({
               value={prefix}
               onChange={(e) => setPrefix(e.target.value.toUpperCase())}
               placeholder="e.g. TC or A"
-              className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground uppercase font-mono placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+              className="w-full px-3 py-2 text-base sm:text-sm border border-input rounded-[var(--radius)] bg-background text-foreground uppercase font-mono placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
             />
             <p className="text-[11px] text-muted-foreground font-mono mt-1">Preview: {prefix || 'Q'}-001</p>
           </div>
@@ -100,7 +100,7 @@ export const CreateQueueModal: React.FC<CreateQueueModalProps> = ({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Brief purpose or instructions for this line..."
-            className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-none transition-colors"
+            className="w-full px-3 py-2 text-base sm:text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-none transition-colors"
           />
         </div>
 

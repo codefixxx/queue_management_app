@@ -160,17 +160,17 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       </div>
 
       {/* Row 2: Hourly Trends & Status Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 sm:gap-4 min-w-0">
         {/* Hourly Flow Chart */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 min-w-0 overflow-hidden">
           <CardHeader className="py-2.5 sm:py-3 px-3.5 sm:px-4 border-b border-border flex flex-row items-center justify-between">
             <CardTitle className="text-xs font-serif font-bold text-foreground flex items-center gap-1.5 truncate">
               <TrendingUp className="w-3.5 h-3.5 text-primary shrink-0" />
               <span>Hourly Customer Flow</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-2 sm:p-4">
-            <div className="h-52 sm:h-64 w-full">
+          <CardContent className="p-2 sm:p-4 min-w-0 overflow-hidden">
+            <div className="h-52 sm:h-64 w-full min-w-0 overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={hourlyTrends} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.6} />
@@ -211,12 +211,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         </Card>
 
         {/* Status Distribution */}
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="py-2.5 sm:py-3 px-3.5 sm:px-4 border-b border-border">
             <CardTitle className="text-xs font-serif font-bold text-foreground">Status Breakdown</CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-4">
-            <div className="h-44 sm:h-48 w-full flex items-center justify-center">
+          <CardContent className="p-3 sm:p-4 min-w-0 overflow-hidden">
+            <div className="h-44 sm:h-48 w-full flex items-center justify-center min-w-0 overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -256,16 +256,16 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       </div>
 
       {/* Row 3: Wait Time Distribution & Queue Comparison */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 sm:gap-4 min-w-0">
         {/* Wait Time Buckets */}
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="py-2.5 sm:py-3 px-3.5 sm:px-4 border-b border-border">
             <CardTitle className="text-xs font-serif font-bold text-foreground">
               Customer Wait Time Distribution
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-2 sm:p-4">
-            <div className="h-48 sm:h-56 w-full">
+          <CardContent className="p-2 sm:p-4 min-w-0 overflow-hidden">
+            <div className="h-48 sm:h-56 w-full min-w-0 overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={waitTimeBuckets} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.6} />
@@ -288,15 +288,15 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         </Card>
 
         {/* Queue Comparison Table */}
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="py-2.5 sm:py-3 px-3.5 sm:px-4 border-b border-border">
             <CardTitle className="text-xs font-serif font-bold text-foreground flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-primary shrink-0" />
               <span>Line-by-Line Throughput</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
+          <CardContent className="p-0 min-w-0 overflow-hidden">
+            <div className="overflow-x-auto no-scrollbar">
               <table className="w-full text-xs text-left min-w-[340px]">
                 <thead className="bg-secondary text-muted-foreground border-b border-border">
                   <tr>

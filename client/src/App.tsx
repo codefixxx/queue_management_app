@@ -239,8 +239,8 @@ export function App() {
     try {
       setLoading(true);
       const res = await api.login({
-        email: 'admin@queue.demo',
-        password: 'admin'
+        email: 'manager@queueflow.com',
+        password: 'password123'
       });
       setUser(res.user);
       addToast(`Manager: ${res.user.name}`, 'success');
@@ -310,7 +310,7 @@ export function App() {
         </div>
       )}
 
-      <main className="flex-1">
+      <main className={`flex-1 ${user ? 'pb-20 md:pb-6' : ''}`}>
         {!user ? (
           /* Utilitarian landing screen */
           <div className="max-w-4xl mx-auto px-4 py-10 sm:py-20 text-center">

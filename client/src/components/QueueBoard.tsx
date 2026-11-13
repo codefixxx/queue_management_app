@@ -122,8 +122,8 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 space-y-4 sm:space-y-5">
       {/* Queue Tabs Bar - Horizontally Scrollable on Mobile & Tablet */}
-      <div className="flex items-center justify-between border-b border-border pb-2.5 sm:pb-3 gap-2 sm:gap-4 overflow-x-auto">
-        <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center justify-between border-b border-border pb-2.5 sm:pb-3 gap-2 sm:gap-4 w-full min-w-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 flex-1 min-w-0">
           {queues.map((q) => {
             const isSelected = q.id === activeQueue?.id;
             return (
@@ -335,12 +335,12 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ type: 'spring', damping: 28, stiffness: 420 }}
-                      className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 p-3 sm:p-3.5 transition-colors ${
+                      className={`flex items-center justify-between gap-2.5 sm:gap-3 p-3 sm:p-3.5 transition-colors ${
                         isTop ? 'bg-primary/5' : 'hover:bg-muted/50'
                       }`}
                     >
                       {/* Ticket Info */}
-                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 w-full sm:w-auto">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                         <span
                           className={`font-mono text-xs font-semibold px-1.5 sm:px-2 py-0.5 rounded-[var(--radius)] shrink-0 ${
                             isTop
@@ -351,19 +351,19 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                           #{token.position}
                         </span>
 
-                        <div className="font-mono font-bold text-xs sm:text-sm bg-foreground text-background px-2 sm:px-2.5 py-1 rounded-[var(--radius)] tracking-tight shrink-0">
+                        <div className="font-mono font-bold text-xs sm:text-sm bg-foreground text-background px-2 sm:px-2.5 py-1 rounded-[var(--radius)] tracking-tight shrink-0 shadow-2xs">
                           {token.tokenNumber}
                         </div>
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                            <span className="text-xs font-bold text-foreground truncate max-w-[140px] sm:max-w-[200px]">{token.customerName}</span>
+                            <span className="text-xs font-bold text-foreground truncate max-w-[120px] sm:max-w-[200px]">{token.customerName}</span>
                             {isTop && (
                               <span className="text-[10px] text-primary bg-primary/15 px-1.5 py-0.2 rounded font-semibold border border-primary/25 shrink-0">
                                 Next
                               </span>
                             )}
-                            {token.priority === 'VIP' && <Badge variant="vip" className="shrink-0">VIP</Badge>}
+                            {token.priority === 'VIP' && <Badge variant="vip" className="shrink-0 text-[10px] px-1.5 py-0">VIP</Badge>}
                           </div>
                           <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
                             {token.customerPhone && (
@@ -372,49 +372,44 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                                 {token.customerPhone}
                               </span>
                             )}
-                            <span className="font-mono">{formatWaitTime(token.createdAt)}</span>
+                            <span className="font-mono text-[10px] sm:text-xs">{formatWaitTime(token.createdAt)}</span>
                             {token.notes && (
                               <>
                                 <span>•</span>
-                                <span className="truncate max-w-[130px] sm:max-w-[220px]">{token.notes}</span>
+                                <span className="truncate max-w-[120px] sm:max-w-[200px]">{token.notes}</span>
                               </>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Controls (Move Up, Move Down, Cancel) - mobile generous tap targets */}
-                      <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end pt-1 sm:pt-0 border-t sm:border-t-0 border-border/40">
-                        <Button
-                          variant="secondary"
-                          size="sm"
+                      {/* Controls (Move Up, Move Down, Cancel) - Compact touch targets */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
                           disabled={isTop}
-                          loading={actionLoading === `up-${token.id}`}
                           onClick={() => handleAction(`up-${token.id}`, () => onMoveUp(token.id))}
                           title="Move up in line"
-                          className="h-8 px-2.5 text-xs flex-1 sm:flex-none justify-center"
+                          className="h-8 w-8 rounded-[var(--radius)] bg-secondary text-secondary-foreground hover:bg-muted border border-border flex items-center justify-center disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
                         >
-                          <ChevronUp className="w-3.5 h-3.5" />
-                          <span className="sm:hidden text-[10px] ml-1">Up</span>
-                        </Button>
-
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          disabled={isBottom}
-                          loading={actionLoading === `down-${token.id}`}
-                          onClick={() => handleAction(`down-${token.id}`, () => onMoveDown(token.id))}
-                          title="Move down in line"
-                          className="h-8 px-2.5 text-xs flex-1 sm:flex-none justify-center"
-                        >
-                          <ChevronDown className="w-3.5 h-3.5" />
-                          <span className="sm:hidden text-[10px] ml-1">Down</span>
-                        </Button>
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
 
                         <button
+                          type="button"
+                          disabled={isBottom}
+                          onClick={() => handleAction(`down-${token.id}`, () => onMoveDown(token.id))}
+                          title="Move down in line"
+                          className="h-8 w-8 rounded-[var(--radius)] bg-secondary text-secondary-foreground hover:bg-muted border border-border flex items-center justify-center disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
                           onClick={() => onOpenCancel(token)}
                           title="Cancel token"
-                          className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors cursor-pointer shrink-0"
+                          className="h-8 w-8 rounded-[var(--radius)] text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center justify-center transition-colors cursor-pointer"
                           aria-label="Cancel token"
                         >
                           <X className="w-4 h-4" />

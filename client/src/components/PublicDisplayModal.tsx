@@ -60,7 +60,7 @@ export const PublicDisplayModal: React.FC<PublicDisplayProps> = ({
         </div>
 
         {/* Queue Switcher - Scrollable horizontally on mobile */}
-        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto max-w-[45vw] sm:max-w-none">
+        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar max-w-[40vw] sm:max-w-none min-w-0">
           {queues.map((q) => (
             <button
               key={q.id}

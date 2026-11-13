@@ -91,7 +91,7 @@ export const CancelTokenModal: React.FC<CancelTokenModalProps> = ({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Type custom cancellation reason..."
-            className="w-full px-3 py-2 text-xs border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+            className="w-full px-3 py-2 text-base sm:text-xs border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
           />
         </div>
 

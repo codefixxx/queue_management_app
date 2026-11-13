@@ -143,7 +143,7 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
             placeholder="e.g. John Doe or Jane Smith"
-            className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+            className="w-full px-3 py-2 text-base sm:text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
           />
         </div>
 
@@ -156,7 +156,7 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
               placeholder="e.g. +1 555-0199"
-              className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+              className="w-full px-3 py-2 text-base sm:text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
             />
           </div>
 
@@ -198,7 +198,7 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="e.g. Needs document verification"
-            className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+            className="w-full px-3 py-2 text-base sm:text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
           />
         </div>
 
