@@ -67,7 +67,7 @@ export const CancelTokenModal: React.FC<CancelTokenModalProps> = ({
             {presetReasons.map((r) => (
               <label
                 key={r}
-                className={`flex items-center gap-2 p-2 rounded-[var(--radius)] border text-xs cursor-pointer transition-colors ${
+                className={`flex items-center gap-2.5 px-3 py-2 sm:py-1.5 min-h-[40px] sm:min-h-[34px] rounded-[var(--radius)] border text-xs cursor-pointer transition-colors ${
                   reason === r ? 'border-destructive/40 bg-destructive/10 text-foreground font-medium' : 'border-border hover:bg-muted/50'
                 }`}
               >

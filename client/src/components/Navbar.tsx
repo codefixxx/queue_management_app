@@ -157,26 +157,27 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {soundOn ? <Volume2 className="w-4 h-4 text-primary" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
                 </button>
 
-                {/* New Line Button (Large Desktop screens) */}
+                {/* New Line Button (Desktops) */}
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={onOpenCreateQueue}
-                  className="hidden lg:inline-flex h-8 px-2.5 text-xs"
+                  className="hidden xl:inline-flex h-8 px-2.5 text-xs"
                 >
                   New Line
                 </Button>
 
-                {/* Issue Ticket Button (Large Desktop screens) */}
+                {/* Issue Ticket Button (Tablet & Desktop) */}
                 {queues.length > 0 && (
                   <Button
                     variant="primary"
                     size="sm"
                     onClick={onOpenAddToken}
-                    className="hidden lg:inline-flex h-8 px-3 text-xs shadow-sm font-semibold"
+                    className="hidden md:inline-flex h-8 px-2.5 sm:px-3 text-xs shadow-sm font-semibold"
+                    title="Issue new ticket"
                   >
                     <Plus className="w-3.5 h-3.5 mr-1" />
-                    Issue Ticket
+                    <span>Issue Ticket</span>
                   </Button>
                 )}
 

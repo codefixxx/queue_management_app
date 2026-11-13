@@ -14,7 +14,8 @@ import {
   CheckCircle,
   Plus,
   Trash2,
-  CornerDownRight
+  CornerDownRight,
+  History
 } from 'lucide-react';
 import { sound } from '../utils/sound';
 
@@ -161,14 +162,16 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
           </Button>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setViewHistory(!viewHistory)}
-            className="text-xs text-muted-foreground h-7.5 px-2 sm:px-2.5 hover:text-foreground shrink-0"
+            className="text-xs text-muted-foreground h-8 px-2 sm:px-2.5 hover:text-foreground shrink-0 flex items-center"
+            title={viewHistory ? 'Hide history' : 'View recent history'}
           >
-            {viewHistory ? 'Hide history' : 'History'}
+            <History className="w-3.5 h-3.5 sm:mr-1 shrink-0" />
+            <span className="hidden sm:inline">{viewHistory ? 'Hide history' : 'History'}</span>
           </Button>
           <Button
             variant="ghost"
@@ -178,7 +181,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                 onDeleteQueue(activeQueue.id);
               }
             }}
-            className="text-muted-foreground hover:text-destructive h-7.5 px-2 text-xs shrink-0"
+            className="text-muted-foreground hover:text-destructive h-8 px-2 text-xs shrink-0 flex items-center justify-center"
             title="Delete this queue"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -211,7 +214,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
               variant="outline"
               size="md"
               onClick={onOpenAddToken}
-              className="h-9 sm:h-9.5 text-xs flex-1 md:flex-none justify-center"
+              className="h-10 sm:h-9 text-xs flex-1 md:flex-none justify-center"
             >
               <Plus className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
               Add person
@@ -223,13 +226,13 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
               disabled={waitingTokens.length === 0}
               loading={actionLoading === 'serve-next'}
               onClick={handleServe}
-              className="h-9 sm:h-9.5 text-xs px-3 sm:px-4 font-semibold shadow-sm flex-1 md:flex-none justify-center"
+              className="h-10 sm:h-9 text-xs px-3 sm:px-4 font-semibold shadow-sm flex-1 md:flex-none justify-center"
             >
               {topToken ? (
                 <>
                   <CornerDownRight className="w-3.5 h-3.5 mr-1 shrink-0" />
                   <span>Call {topToken.tokenNumber}</span>
-                  <span className="opacity-80 font-normal ml-1 hidden lg:inline truncate max-w-[100px]">
+                  <span className="opacity-80 font-normal ml-1 hidden lg:inline truncate max-w-[120px]">
                     ({topToken.customerName})
                   </span>
                 </>
@@ -288,7 +291,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                     size="sm"
                     loading={actionLoading === `complete-${token.id}`}
                     onClick={() => handleAction(`complete-${token.id}`, () => onCompleteService(token.id))}
-                    className="h-8 text-xs w-full sm:w-auto justify-center shadow-xs"
+                    className="h-10 sm:h-8.5 text-xs w-full sm:w-auto justify-center shadow-xs font-semibold"
                   >
                     <CheckCircle className="w-3.5 h-3.5 mr-1" />
                     Complete Service
@@ -357,7 +360,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                            <span className="text-xs font-bold text-foreground truncate max-w-[120px] sm:max-w-[200px]">{token.customerName}</span>
+                            <span className="text-xs sm:text-sm font-bold text-foreground truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[260px] md:max-w-[360px]">{token.customerName}</span>
                             {isTop && (
                               <span className="text-[10px] text-primary bg-primary/15 px-1.5 py-0.2 rounded font-semibold border border-primary/25 shrink-0">
                                 Next
@@ -367,30 +370,33 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                           </div>
                           <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
                             {token.customerPhone && (
-                              <span className="flex items-center gap-1">
-                                <Phone className="w-2.5 h-2.5 text-muted-foreground" />
+                              <span className="flex items-center gap-1 font-mono text-[10px] sm:text-xs">
+                                <Phone className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
                                 {token.customerPhone}
                               </span>
                             )}
-                            <span className="font-mono text-[10px] sm:text-xs">{formatWaitTime(token.createdAt)}</span>
+                            <span className="font-mono text-[10px] sm:text-xs flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
+                              {formatWaitTime(token.createdAt)}
+                            </span>
                             {token.notes && (
                               <>
                                 <span>•</span>
-                                <span className="truncate max-w-[120px] sm:max-w-[200px]">{token.notes}</span>
+                                <span className="truncate max-w-[110px] xs:max-w-[160px] sm:max-w-[240px] md:max-w-[320px]">{token.notes}</span>
                               </>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Controls (Move Up, Move Down, Cancel) - Compact touch targets */}
-                      <div className="flex items-center gap-1 shrink-0">
+                      {/* Controls (Move Up, Move Down, Cancel) - Touch-friendly targets */}
+                      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                         <button
                           type="button"
                           disabled={isTop}
                           onClick={() => handleAction(`up-${token.id}`, () => onMoveUp(token.id))}
                           title="Move up in line"
-                          className="h-8 w-8 rounded-[var(--radius)] bg-secondary text-secondary-foreground hover:bg-muted border border-border flex items-center justify-center disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                          className="h-9 w-9 sm:h-8 sm:w-8 rounded-[var(--radius)] bg-secondary text-secondary-foreground hover:bg-muted border border-border flex items-center justify-center disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
                         >
                           <ChevronUp className="w-4 h-4" />
                         </button>
@@ -400,7 +406,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                           disabled={isBottom}
                           onClick={() => handleAction(`down-${token.id}`, () => onMoveDown(token.id))}
                           title="Move down in line"
-                          className="h-8 w-8 rounded-[var(--radius)] bg-secondary text-secondary-foreground hover:bg-muted border border-border flex items-center justify-center disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                          className="h-9 w-9 sm:h-8 sm:w-8 rounded-[var(--radius)] bg-secondary text-secondary-foreground hover:bg-muted border border-border flex items-center justify-center disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
                         >
                           <ChevronDown className="w-4 h-4" />
                         </button>
@@ -409,7 +415,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                           type="button"
                           onClick={() => onOpenCancel(token)}
                           title="Cancel token"
-                          className="h-8 w-8 rounded-[var(--radius)] text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center justify-center transition-colors cursor-pointer"
+                          className="h-9 w-9 sm:h-8 sm:w-8 rounded-[var(--radius)] text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center justify-center transition-colors cursor-pointer"
                           aria-label="Cancel token"
                         >
                           <X className="w-4 h-4" />

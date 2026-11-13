@@ -88,21 +88,21 @@ export const TokenSuccessModal: React.FC<TokenSuccessModalProps> = ({
         {/* Action Controls - Mobile Responsive */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1 border-t border-border">
           <div className="flex items-center gap-1.5 w-full sm:w-auto">
-            <Button variant="outline" size="sm" onClick={handleCopy} className="h-8 text-xs flex-1 sm:flex-none justify-center">
+            <Button variant="outline" size="sm" onClick={handleCopy} className="h-9 sm:h-8 text-xs flex-1 sm:flex-none justify-center">
               {copied ? <Check className="w-3.5 h-3.5 mr-1 text-primary" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
               {copied ? 'Copied' : 'Copy'}
             </Button>
-            <Button variant="outline" size="sm" onClick={handlePrint} className="h-8 text-xs flex-1 sm:flex-none justify-center">
+            <Button variant="outline" size="sm" onClick={handlePrint} className="h-9 sm:h-8 text-xs flex-1 sm:flex-none justify-center">
               <Printer className="w-3.5 h-3.5 mr-1" />
               Print
             </Button>
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" size="sm" onClick={onClose} className="h-8 text-xs flex-1 sm:flex-none justify-center">
+            <Button variant="outline" size="sm" onClick={onClose} className="h-9 sm:h-8 text-xs flex-1 sm:flex-none justify-center">
               Done
             </Button>
-            <Button variant="primary" size="sm" onClick={onIssueAnother} className="h-8 text-xs shadow-sm flex-1 sm:flex-none justify-center">
+            <Button variant="primary" size="sm" onClick={onIssueAnother} className="h-9 sm:h-8 text-xs shadow-sm flex-1 sm:flex-none justify-center font-semibold">
               <Plus className="w-3.5 h-3.5 mr-1" />
               Issue Another
             </Button>

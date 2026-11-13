@@ -69,12 +69,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     >
       <div className="space-y-4">
         {/* Quick Demo Credentials Pill */}
-        <div className="p-3 bg-secondary/80 border border-border rounded-[var(--radius)] flex items-center justify-between gap-3">
-          <div className="text-xs text-foreground">
+        <div className="p-3 bg-secondary/80 border border-border rounded-[var(--radius)] flex flex-col xs:flex-row xs:items-center justify-between gap-2.5 sm:gap-3">
+          <div className="text-xs text-foreground min-w-0">
             <span className="font-semibold flex items-center gap-1 text-primary">
-              <Sparkles className="w-3.5 h-3.5 inline" /> Quick Demo Account
+              <Sparkles className="w-3.5 h-3.5 inline shrink-0" /> Quick Demo Account
             </span>
-            <span className="text-muted-foreground text-[11px] font-mono">manager@queueflow.com (password123)</span>
+            <span className="text-muted-foreground text-[11px] font-mono block truncate">manager@queueflow.com / password123</span>
           </div>
           <Button
             type="button"
@@ -82,7 +82,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             variant="primary"
             onClick={handleDemoLogin}
             loading={loading}
-            className="text-xs h-7.5 px-3 whitespace-nowrap"
+            className="text-xs h-8 sm:h-7.5 px-3 w-full xs:w-auto shrink-0 justify-center"
           >
             Auto Login
           </Button>

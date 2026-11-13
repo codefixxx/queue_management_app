@@ -36,9 +36,9 @@ export const Button: React.FC<ButtonProps> = ({
 
   const sizes = {
     sm: 'h-8 px-2.5 text-xs gap-1.5',
-    md: 'h-9 px-3.5 text-xs font-semibold gap-2',
-    lg: 'h-10 px-5 text-sm font-semibold gap-2.5',
-    icon: 'h-8.5 w-8.5 p-0'
+    md: 'min-h-[42px] sm:min-h-[36px] px-3.5 text-xs font-semibold gap-2',
+    lg: 'min-h-[46px] sm:min-h-[40px] px-5 text-xs sm:text-sm font-semibold gap-2.5',
+    icon: 'h-9 w-9 p-0 flex items-center justify-center'
   };
 
   return (

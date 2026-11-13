@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api, getAuthToken } from './api';
 import { User, QueueSummary, QueueDetails, Token, AnalyticsData } from './types';
 import { Navbar } from './components/Navbar';
@@ -26,6 +26,9 @@ export function App() {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [loading, setLoading] = useState(false);
   const [networkError, setNetworkError] = useState<string | null>(null);
+
+  const activeQueueIdRef = useRef<string | null>(null);
+  activeQueueIdRef.current = activeQueueId;
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isCreateQueueOpen, setIsCreateQueueOpen] = useState(false);
@@ -78,9 +81,10 @@ export function App() {
       setNetworkError(null);
 
       if (res.queues.length > 0) {
+        const currentId = activeQueueIdRef.current;
         const nextId = preferQueueId && res.queues.some((q) => q.id === preferQueueId)
           ? preferQueueId
-          : (activeQueueId && res.queues.some((q) => q.id === activeQueueId) ? activeQueueId : res.queues[0].id);
+          : (currentId && res.queues.some((q) => q.id === currentId) ? currentId : res.queues[0].id);
 
         setActiveQueueId(nextId);
         await loadQueueDetails(nextId);
@@ -94,9 +98,9 @@ export function App() {
     } finally {
       setLoading(false);
     }
-  }, [activeQueueId, loadQueueDetails]);
+  }, [loadQueueDetails]);
 
-  // Auth bootstrap
+  // Auth bootstrap on initial load
   useEffect(() => {
     const token = getAuthToken();
     if (token) {
@@ -116,7 +120,8 @@ export function App() {
     } else {
       setIsBootstrapping(false);
     }
-  }, [loadQueues, loadAnalytics]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Keyboard Shortcuts: Space to Serve Next, 'n' to Add Token
   useEffect(() => {

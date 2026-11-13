@@ -162,11 +162,11 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-foreground mb-1">Priority Level</label>
-            <div className="grid grid-cols-2 gap-1.5 p-0.5 bg-secondary border border-border rounded-[var(--radius)]">
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-secondary border border-border rounded-[var(--radius)]">
               <button
                 type="button"
                 onClick={() => setPriority('NORMAL')}
-                className={`py-1.5 text-xs font-medium rounded-[var(--radius)] transition-all cursor-pointer ${
+                className={`min-h-[38px] sm:min-h-[32px] py-1.5 text-xs font-medium rounded-[var(--radius)] transition-all cursor-pointer flex items-center justify-center ${
                   priority === 'NORMAL'
                     ? 'bg-card text-foreground shadow-xs font-semibold'
                     : 'text-muted-foreground hover:text-foreground'
@@ -177,7 +177,7 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
               <button
                 type="button"
                 onClick={() => setPriority('VIP')}
-                className={`py-1.5 text-xs font-medium rounded-[var(--radius)] transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                className={`min-h-[38px] sm:min-h-[32px] py-1.5 text-xs font-medium rounded-[var(--radius)] transition-all flex items-center justify-center gap-1 cursor-pointer ${
                   priority === 'VIP'
                     ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 shadow-xs font-bold'
                     : 'text-muted-foreground hover:text-foreground'
