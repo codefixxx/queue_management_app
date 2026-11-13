@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { QueueDetails, QueueSummary, Token } from '../types';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/Card';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
 import {
   ChevronUp,
   ChevronDown,
-  XCircle,
-  BellRing,
-  CheckCircle2,
-  Clock,
-  Sparkles,
+  X,
   Phone,
-  FileText,
+  Clock,
+  CheckCircle,
   Plus,
-  Trash2
+  Trash2,
+  CornerDownRight
 } from 'lucide-react';
+import { sound } from '../utils/sound';
 
 interface QueueBoardProps {
   queues: QueueSummary[];
@@ -38,7 +38,6 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
   activeQueueId,
   onSelectQueue,
   queueDetails,
-  loading,
   onServeNext,
   onMoveUp,
   onMoveDown,
@@ -49,7 +48,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
   onDeleteQueue
 }) => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [subTab, setSubTab] = useState<'waiting' | 'inService' | 'history'>('waiting');
+  const [viewHistory, setViewHistory] = useState(false);
 
   const waitingTokens = queueDetails?.waitingTokens || [];
   const inServiceTokens = queueDetails?.inServiceTokens || [];
@@ -57,8 +56,10 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
   const recentCancelled = queueDetails?.recentCancelled || [];
 
   const topToken = waitingTokens[0];
+  const activeQueue = queues.find((q) => q.id === activeQueueId) || queues[0];
 
   const handleAction = async (actionKey: string, fn: () => Promise<any>) => {
+    sound.playTick();
     setActionLoading(actionKey);
     try {
       await fn();
@@ -67,14 +68,25 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
     }
   };
 
+  const handleServe = async () => {
+    if (!activeQueue || !topToken) return;
+    sound.playCallChime();
+    setActionLoading('serve-next');
+    try {
+      await onServeNext(activeQueue.id);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const formatWaitTime = (createdAt: string) => {
     const diffMs = Date.now() - new Date(createdAt).getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
-    if (diffMins < 1) return 'Just now';
-    if (diffMins === 1) return '1 min ago';
-    if (diffMins < 60) return `${diffMins} mins ago`;
+    if (diffMins < 1) return 'Just added';
+    if (diffMins === 1) return '1m in line';
+    if (diffMins < 60) return `${diffMins}m in line`;
     const diffHours = Math.floor(diffMins / 60);
-    return `${diffHours}h ${diffMins % 60}m ago`;
+    return `${diffHours}h ${diffMins % 60}m in line`;
   };
 
   const formatDuration = (start: string | null | undefined, end: string | null | undefined) => {
@@ -82,50 +94,49 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
     const endTime = end ? new Date(end).getTime() : Date.now();
     const diffMs = endTime - new Date(start).getTime();
     const mins = Math.max(0, Math.floor(diffMs / (1000 * 60)));
-    return `${mins} min${mins !== 1 ? 's' : ''}`;
+    return `${mins}m`;
   };
 
   if (queues.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto py-16 px-4 text-center">
-        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Sparkles className="w-8 h-8" />
+      <div className="max-w-md mx-auto py-20 px-4 text-center">
+        <div className="w-12 h-12 bg-slate-100 border border-slate-200 text-slate-700 rounded-xl flex items-center justify-center mx-auto mb-4 font-mono font-bold">
+          0
         </div>
-        <h2 className="text-xl font-bold text-slate-900 mb-2">No Queues Created Yet</h2>
-        <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
-          Create your first queue counter to start issuing tokens, assigning service, and tracking wait times.
-        </p>
-        <Button variant="primary" size="lg" onClick={onOpenCreateQueue}>
-          <Plus className="w-5 h-5 mr-2" />
-          Create Your First Queue
+        <h2 className="text-base font-bold text-slate-900 mb-1">No queues configured</h2>
+        <p className="text-xs text-slate-500 mb-5">Create a queue line to start issuing tickets and managing customer order.</p>
+        <Button variant="primary" size="md" onClick={onOpenCreateQueue}>
+          <Plus className="w-4 h-4 mr-1.5" />
+          Create Queue Line
         </Button>
       </div>
     );
   }
 
-  const activeQueue = queues.find((q) => q.id === activeQueueId) || queues[0];
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* Queue Selection Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+      {/* Queue Tabs Bar */}
+      <div className="flex items-center justify-between border-b border-slate-200/90 pb-3 gap-4 overflow-x-auto">
+        <div className="flex items-center gap-1.5 shrink-0">
           {queues.map((q) => {
             const isSelected = q.id === activeQueue?.id;
             return (
               <button
                 key={q.id}
-                onClick={() => onSelectQueue(q.id)}
-                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+                onClick={() => {
+                  sound.playTick();
+                  onSelectQueue(q.id);
+                }}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 ring-2 ring-blue-600 ring-offset-2'
+                    ? 'bg-slate-900 text-white shadow-2xs font-semibold'
                     : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
                 <span>{q.name}</span>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                  className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${
+                    isSelected ? 'bg-white/20 text-white font-bold' : 'bg-slate-100 text-slate-600'
                   }`}
                 >
                   {q.counts.waiting}
@@ -137,362 +148,295 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
             variant="outline"
             size="sm"
             onClick={onOpenCreateQueue}
-            className="rounded-xl border-dashed h-10 px-3 text-slate-600 hover:text-blue-600"
+            className="h-7.5 px-2 text-xs border-dashed text-slate-500 hover:text-slate-900"
           >
-            <Plus className="w-4 h-4 mr-1" />
-            Add Queue
+            <Plus className="w-3 h-3 mr-1" />
+            Add
           </Button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setViewHistory(!viewHistory)}
+            className="text-xs text-slate-600 h-7.5 px-2.5"
+          >
+            {viewHistory ? 'Hide history' : 'Recent activity'}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
-              if (confirm(`Are you sure you want to delete queue "${activeQueue?.name}"?`)) {
+              if (confirm(`Delete queue "${activeQueue?.name}" and all records?`)) {
                 onDeleteQueue(activeQueue.id);
               }
             }}
-            className="text-slate-400 hover:text-rose-600 text-xs"
+            className="text-slate-400 hover:text-rose-600 h-7.5 px-2 text-xs"
           >
-            <Trash2 className="w-3.5 h-3.5 mr-1" />
-            Delete Queue
+            <Trash2 className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
 
-      {/* Main Queue Actions Hero Banner */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-850 to-blue-950 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden border border-slate-800">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      {/* Control Station (Dispatch Banner) */}
+      <div className="bg-white border border-slate-200/90 rounded-xl p-4 sm:p-5 shadow-2xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3">
-              <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-400/30 rounded-lg text-xs font-mono font-bold tracking-wider">
-                Prefix: {activeQueue?.prefix}
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">
+                {activeQueue?.prefix}
               </span>
-              <h2 className="text-2xl font-bold tracking-tight text-white">{activeQueue?.name}</h2>
+              <h1 className="text-lg font-bold text-slate-900 tracking-tight">{activeQueue?.name}</h1>
             </div>
-            {activeQueue?.description && (
-              <p className="text-xs text-slate-300 mt-1.5 max-w-xl">{activeQueue.description}</p>
-            )}
-
-            <div className="flex flex-wrap items-center gap-4 mt-4 text-xs">
-              <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-                <span className="text-amber-400 font-bold text-sm">{waitingTokens.length}</span>
-                <span className="text-slate-400">Waiting in line</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-                <span className="text-blue-400 font-bold text-sm">{inServiceTokens.length}</span>
-                <span className="text-slate-400">Being served</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-                <span className="text-emerald-400 font-bold text-sm">{queueDetails?.counts.completed || 0}</span>
-                <span className="text-slate-400">Served today</span>
-              </div>
+            <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+              <span>{waitingTokens.length} waiting</span>
+              <span>•</span>
+              <span>{inServiceTokens.length} at counter</span>
+              <span>•</span>
+              <span>{queueDetails?.counts.completed || 0} served today</span>
             </div>
           </div>
 
-          {/* Requirement 6: Assign token at top of queue for service with a simple button click */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={onOpenAddToken}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Add Person
+          {/* Action Row */}
+          <div className="flex items-center gap-2.5">
+            <Button variant="outline" size="md" onClick={onOpenAddToken} className="h-9.5 text-xs">
+              <Plus className="w-3.5 h-3.5 mr-1 text-slate-500" />
+              Add person
             </Button>
 
             <Button
-              variant="success"
-              size="lg"
+              variant="primary"
+              size="md"
               disabled={waitingTokens.length === 0}
               loading={actionLoading === 'serve-next'}
-              onClick={() => handleAction('serve-next', () => onServeNext(activeQueue.id))}
-              className="px-6 py-3.5 shadow-lg shadow-emerald-900/30 font-bold text-base"
+              onClick={handleServe}
+              className="h-9.5 text-xs px-4 font-semibold bg-blue-600 hover:bg-blue-700 border-blue-600 text-white"
             >
-              <BellRing className="w-5 h-5 mr-2 animate-bounce" />
               {topToken ? (
-                <span>
-                  Serve Next: <strong className="font-mono underline">{topToken.tokenNumber}</strong>
-                </span>
+                <>
+                  <CornerDownRight className="w-3.5 h-3.5 mr-1" />
+                  <span>Call {topToken.tokenNumber}</span>
+                  <span className="opacity-75 font-normal ml-1 hidden sm:inline">({topToken.customerName})</span>
+                </>
               ) : (
-                <span>Queue is Empty</span>
+                <span>Line is clear</span>
               )}
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Currently In Service Counter Section */}
+      {/* Active Service Counter */}
       {inServiceTokens.length > 0 && (
-        <Card className="border-blue-200 bg-blue-50/50 shadow-xs">
-          <CardHeader className="pb-3 border-b border-blue-100 flex flex-row items-center justify-between">
+        <div className="bg-slate-950 text-white rounded-xl p-4 shadow-sm border border-slate-900">
+          <div className="flex items-center justify-between mb-3 text-xs text-slate-400">
             <div className="flex items-center gap-2">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-600"></span>
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="font-semibold text-slate-200 tracking-wide uppercase text-[11px]">
+                Active at Counter ({inServiceTokens.length})
               </span>
-              <CardTitle className="text-base text-blue-950 font-bold">
-                Currently In Service Counter ({inServiceTokens.length})
-              </CardTitle>
             </div>
-            <span className="text-xs text-blue-700 font-medium">Assigned Booth / Counter</span>
-          </CardHeader>
-          <CardContent className="pt-4 space-y-3">
+            <span className="text-[11px] font-mono text-slate-400">Station 1</span>
+          </div>
+
+          <div className="space-y-2.5">
             {inServiceTokens.map((token) => (
               <div
                 key={token.id}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-blue-200 shadow-xs"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 p-3.5 rounded-lg border border-slate-800"
               >
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-16 bg-blue-600 text-white rounded-xl flex items-center justify-center font-mono font-extrabold text-lg shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 px-2.5 bg-slate-800 rounded text-emerald-400 font-mono font-bold text-sm flex items-center justify-center border border-slate-700">
                     {token.tokenNumber}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-slate-900 text-base">{token.customerName}</h4>
-                      {token.priority === 'VIP' && <Badge variant="vip">VIP</Badge>}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-1">
-                      {token.customerPhone && (
-                        <span className="flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-slate-400" />
-                          {token.customerPhone}
+                      <span className="font-semibold text-slate-100 text-sm">{token.customerName}</span>
+                      {token.priority === 'VIP' && (
+                        <span className="text-[10px] px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded font-semibold border border-amber-500/30">
+                          VIP
                         </span>
                       )}
-                      <span className="flex items-center gap-1 text-blue-600 font-medium">
-                        <Clock className="w-3 h-3" />
-                        In service for: {formatDuration(token.servedAt, null)}
+                    </div>
+                    <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5">
+                      {token.customerPhone && <span>{token.customerPhone}</span>}
+                      <span className="flex items-center gap-1 font-mono text-slate-300">
+                        <Clock className="w-3 h-3 text-slate-500" />
+                        {formatDuration(token.servedAt, null)}
                       </span>
                     </div>
-                    {token.notes && (
-                      <p className="text-xs text-slate-600 mt-1 bg-slate-50 p-1.5 rounded border border-slate-100">
-                        {token.notes}
-                      </p>
-                    )}
+                    {token.notes && <p className="text-xs text-slate-400 mt-1">{token.notes}</p>}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2">
                   <Button
-                    variant="success"
-                    size="md"
+                    variant="outline"
+                    size="sm"
                     loading={actionLoading === `complete-${token.id}`}
                     onClick={() => handleAction(`complete-${token.id}`, () => onCompleteService(token.id))}
-                    className="w-full sm:w-auto"
+                    className="h-8 text-xs bg-slate-800 text-slate-100 border-slate-700 hover:bg-slate-700 w-full sm:w-auto"
                   >
-                    <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                    <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-400" />
                     Complete Service
                   </Button>
                 </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
-      {/* Tabs for Waiting Queue vs Service History */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-        <button
-          onClick={() => setSubTab('waiting')}
-          className={`px-4 py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors ${
-            subTab === 'waiting'
-              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          Waiting in Queue ({waitingTokens.length})
-        </button>
-        <button
-          onClick={() => setSubTab('history')}
-          className={`px-4 py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors ${
-            subTab === 'history'
-              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-          }`}
-        >
-          Recent Activity & History ({recentCompleted.length + recentCancelled.length})
-        </button>
-      </div>
+      {/* Main Waiting Queue Line with Framer Motion Spring Layout */}
+      <Card>
+        <CardHeader className="py-3 px-4 border-b border-slate-100 flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-sm font-bold">Waiting Line</CardTitle>
+          </div>
+          <span className="text-xs text-slate-500 font-mono">
+            {waitingTokens.length} customer{waitingTokens.length !== 1 ? 's' : ''} in queue
+          </span>
+        </CardHeader>
 
-      {/* Requirement 4: List of people / tokens waiting in the queue */}
-      {subTab === 'waiting' && (
-        <Card>
-          <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-base">Waiting Line List</CardTitle>
-              <CardDescription>
-                Tokens currently in line. Move tokens up or down to adjust priority.
-              </CardDescription>
+        <CardContent className="p-0">
+          {waitingTokens.length === 0 ? (
+            <div className="py-14 text-center">
+              <p className="text-xs text-slate-500 font-medium">No customers currently waiting in this line.</p>
+              <Button variant="outline" size="sm" onClick={onOpenAddToken} className="mt-3 text-xs">
+                <Plus className="w-3 h-3 mr-1" />
+                Add customer
+              </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={onOpenAddToken}>
-              <Plus className="w-4 h-4 mr-1" />
-              Add Customer
-            </Button>
-          </CardHeader>
-          <CardContent className="p-0">
-            {waitingTokens.length === 0 ? (
-              <div className="py-16 text-center">
-                <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle2 className="w-6 h-6" />
-                </div>
-                <h4 className="font-semibold text-slate-800">The Queue is Currently Empty</h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
-                  All waiting customers have been assigned or served. Click below to add a new token.
-                </p>
-                <Button variant="primary" size="sm" onClick={onOpenAddToken}>
-                  <Plus className="w-4 h-4 mr-1.5" />
-                  Add Customer to Queue
-                </Button>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
+          ) : (
+            <div className="divide-y divide-slate-100">
+              <AnimatePresence initial={false}>
                 {waitingTokens.map((token, index) => {
                   const isTop = index === 0;
                   const isBottom = index === waitingTokens.length - 1;
 
                   return (
-                    <div
+                    <motion.div
                       key={token.id}
-                      className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 transition-colors ${
-                        isTop ? 'bg-amber-50/40 hover:bg-amber-50/70' : 'hover:bg-slate-50/80'
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ type: 'spring', damping: 28, stiffness: 420 }}
+                      className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 transition-colors ${
+                        isTop ? 'bg-amber-50/50' : 'hover:bg-slate-50/80'
                       }`}
                     >
-                      {/* Left: Position Rank + Token Ticket + Customer Details */}
-                      <div className="flex items-center gap-4">
-                        {/* Position Badge */}
-                        <div
-                          className={`h-9 w-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                      {/* Ticket Info */}
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`font-mono text-xs font-semibold px-2 py-0.5 rounded ${
                             isTop
-                              ? 'bg-amber-500 text-white shadow-xs ring-2 ring-amber-300'
-                              : 'bg-slate-100 text-slate-600 border border-slate-200'
+                              ? 'bg-amber-200/70 text-amber-900 border border-amber-300/80 font-bold'
+                              : 'bg-slate-100 text-slate-600'
                           }`}
-                          title={`Position #${token.position}`}
                         >
                           #{token.position}
-                        </div>
+                        </span>
 
-                        {/* Token Monospace Badge */}
-                        <div className="font-mono font-bold text-base bg-slate-900 text-white px-3 py-1.5 rounded-lg tracking-wider shrink-0 shadow-xs">
+                        <div className="font-mono font-bold text-sm bg-slate-900 text-white px-2.5 py-1 rounded tracking-tight">
                           {token.tokenNumber}
                         </div>
 
-                        {/* Customer Information */}
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 text-sm">
-                              {token.customerName}
-                            </span>
+                            <span className="text-xs font-bold text-slate-900">{token.customerName}</span>
                             {isTop && (
-                              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 rounded">
-                                Next Up
+                              <span className="text-[10px] text-amber-800 bg-amber-100 px-1 rounded font-semibold">
+                                Next
                               </span>
                             )}
                             {token.priority === 'VIP' && <Badge variant="vip">VIP</Badge>}
                           </div>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-0.5">
+                          <div className="flex items-center gap-2.5 text-[11px] text-slate-500 mt-0.5">
                             {token.customerPhone && (
                               <span className="flex items-center gap-1">
-                                <Phone className="w-3 h-3 text-slate-400" />
+                                <Phone className="w-2.5 h-2.5 text-slate-400" />
                                 {token.customerPhone}
                               </span>
                             )}
-                            <span className="flex items-center gap-1 text-slate-400">
-                              <Clock className="w-3 h-3" />
-                              Waited: {formatWaitTime(token.createdAt)}
-                            </span>
+                            <span className="text-slate-400">{formatWaitTime(token.createdAt)}</span>
+                            {token.notes && (
+                              <>
+                                <span>•</span>
+                                <span className="text-slate-600 truncate max-w-[200px]">{token.notes}</span>
+                              </>
+                            )}
                           </div>
-                          {token.notes && (
-                            <div className="flex items-center gap-1 text-xs text-slate-600 mt-1">
-                              <FileText className="w-3 h-3 text-slate-400" />
-                              <span>{token.notes}</span>
-                            </div>
-                          )}
                         </div>
                       </div>
 
-                      {/* Right: Requirement 5 (Move Up / Down) & Requirement 7 (Cancel) */}
-                      <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
-                        {/* Move Up Button */}
+                      {/* Controls (Move Up, Move Down, Cancel) */}
+                      <div className="flex items-center gap-1 w-full sm:w-auto justify-end pt-1 sm:pt-0">
                         <Button
                           variant="secondary"
                           size="sm"
                           disabled={isTop}
                           loading={actionLoading === `up-${token.id}`}
                           onClick={() => handleAction(`up-${token.id}`, () => onMoveUp(token.id))}
-                          title={isTop ? 'Already at top' : 'Move up in queue'}
-                          className="h-8.5 px-2.5 text-xs text-slate-700"
+                          title="Move up"
+                          className="h-7.5 px-2 text-xs text-slate-700"
                         >
-                          <ChevronUp className="w-4 h-4 mr-1 text-blue-600" />
-                          Up
+                          <ChevronUp className="w-3.5 h-3.5" />
                         </Button>
 
-                        {/* Move Down Button */}
                         <Button
                           variant="secondary"
                           size="sm"
                           disabled={isBottom}
                           loading={actionLoading === `down-${token.id}`}
                           onClick={() => handleAction(`down-${token.id}`, () => onMoveDown(token.id))}
-                          title={isBottom ? 'Already at bottom' : 'Move down in queue'}
-                          className="h-8.5 px-2.5 text-xs text-slate-700"
+                          title="Move down"
+                          className="h-7.5 px-2 text-xs text-slate-700"
                         >
-                          <ChevronDown className="w-4 h-4 mr-1 text-blue-600" />
-                          Down
+                          <ChevronDown className="w-3.5 h-3.5" />
                         </Button>
 
-                        {/* Cancel Token Button */}
-                        <Button
-                          variant="outline"
-                          size="sm"
+                        <button
                           onClick={() => onOpenCancel(token)}
-                          title="Cancel token from queue"
-                          className="h-8.5 px-2.5 text-xs text-rose-600 hover:bg-rose-50 hover:border-rose-200"
+                          title="Cancel token"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer ml-1"
                         >
-                          <XCircle className="w-3.5 h-3.5 mr-1" />
-                          Cancel
-                        </Button>
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              </AnimatePresence>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* History Subtab: Completed & Cancelled */}
-      {subTab === 'history' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Recent Completed */}
+      {/* Collapsible History Section */}
+      {viewHistory && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
           <Card>
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-base text-emerald-950 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                Recently Completed ({recentCompleted.length})
+            <CardHeader className="py-2.5 px-4 border-b border-slate-100">
+              <CardTitle className="text-xs font-semibold text-slate-700">
+                Completed ({recentCompleted.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {recentCompleted.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400">
-                  No completed tokens recorded yet.
-                </div>
+                <div className="p-4 text-xs text-slate-400 text-center">No completions recorded</div>
               ) : (
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-slate-100 max-h-56 overflow-y-auto">
                   {recentCompleted.map((t) => (
-                    <div key={t.id} className="p-3.5 flex items-center justify-between text-xs">
+                    <div key={t.id} className="p-2.5 px-4 flex items-center justify-between text-xs">
                       <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-slate-900">{t.tokenNumber}</span>
-                          <span className="font-medium text-slate-700">{t.customerName}</span>
-                        </div>
-                        <span className="text-[11px] text-slate-400 block mt-0.5">
-                          Served by {t.servedBy || 'Manager'} • Duration: {formatDuration(t.servedAt, t.completedAt)}
-                        </span>
+                        <span className="font-mono font-semibold text-slate-900">{t.tokenNumber}</span>
+                        <span className="text-slate-600 ml-2">{t.customerName}</span>
                       </div>
-                      <Badge variant="success">Served</Badge>
+                      <span className="font-mono text-[11px] text-slate-400">
+                        {formatDuration(t.servedAt, t.completedAt)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -500,33 +444,26 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
             </CardContent>
           </Card>
 
-          {/* Recent Cancelled */}
           <Card>
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-base text-rose-950 flex items-center gap-2">
-                <XCircle className="w-4 h-4 text-rose-600" />
-                Recently Cancelled ({recentCancelled.length})
+            <CardHeader className="py-2.5 px-4 border-b border-slate-100">
+              <CardTitle className="text-xs font-semibold text-slate-700">
+                Cancelled ({recentCancelled.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {recentCancelled.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400">
-                  No cancelled tokens recorded.
-                </div>
+                <div className="p-4 text-xs text-slate-400 text-center">No cancellations recorded</div>
               ) : (
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-slate-100 max-h-56 overflow-y-auto">
                   {recentCancelled.map((t) => (
-                    <div key={t.id} className="p-3.5 flex items-center justify-between text-xs">
+                    <div key={t.id} className="p-2.5 px-4 flex items-center justify-between text-xs">
                       <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-slate-900">{t.tokenNumber}</span>
-                          <span className="font-medium text-slate-700">{t.customerName}</span>
-                        </div>
-                        <span className="text-[11px] text-rose-600 block mt-0.5">
-                          Reason: {t.cancellationReason || 'Cancelled by manager'}
-                        </span>
+                        <span className="font-mono font-semibold text-slate-900">{t.tokenNumber}</span>
+                        <span className="text-slate-600 ml-2">{t.customerName}</span>
                       </div>
-                      <Badge variant="destructive">Cancelled</Badge>
+                      <span className="text-[11px] text-rose-600 truncate max-w-[130px]">
+                        {t.cancellationReason || 'Cancelled'}
+                      </span>
                     </div>
                   ))}
                 </div>

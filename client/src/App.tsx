@@ -4,17 +4,19 @@ import { User, QueueSummary, QueueDetails, Token, AnalyticsData } from './types'
 import { Navbar } from './components/Navbar';
 import { QueueBoard } from './components/QueueBoard';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
+import { PublicDisplayModal } from './components/PublicDisplayModal';
 import { AuthModal } from './components/AuthModal';
 import { CreateQueueModal } from './components/CreateQueueModal';
 import { AddTokenModal } from './components/AddTokenModal';
 import { CancelTokenModal } from './components/CancelTokenModal';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { Button } from './components/ui/Button';
-import { Sparkles, Layers, ShieldCheck, ArrowRight } from 'lucide-react';
+import { sound } from './utils/sound';
+import { ArrowRight, Layers, Clock, Zap } from 'lucide-react';
 
 export function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'queue' | 'analytics'>('queue');
+  const [activeTab, setActiveTab] = useState<'queue' | 'analytics' | 'display'>('queue');
   const [queues, setQueues] = useState<QueueSummary[]>([]);
   const [activeQueueId, setActiveQueueId] = useState<string | null>(null);
   const [queueDetails, setQueueDetails] = useState<QueueDetails | null>(null);
@@ -99,16 +101,43 @@ export function App() {
     }
   }, []);
 
-  // Switch queue
+  // Keyboard ergonomics (Space to serve next, N for new token)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in input/textarea or modal is open
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
+      if (isInput || isAuthOpen || isCreateQueueOpen || isAddTokenOpen || cancelTargetToken) return;
+
+      if (e.code === 'Space' && activeTab === 'queue' && activeQueueId && queueDetails?.waitingTokens[0]) {
+        e.preventDefault();
+        handleServeNext(activeQueueId);
+      } else if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        setIsAddTokenOpen(true);
+      } else if (e.key === '1') {
+        setActiveTab('queue');
+      } else if (e.key === '2') {
+        setActiveTab('analytics');
+      } else if (e.key === '3') {
+        setActiveTab('display');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, activeQueueId, queueDetails, isAuthOpen, isCreateQueueOpen, isAddTokenOpen, cancelTargetToken]);
+
   const handleSelectQueue = (id: string) => {
     setActiveQueueId(id);
     loadQueueDetails(id);
   };
 
-  // Requirement 6: Assign token at top of queue for service
+  // Serve Next
   const handleServeNext = async (queueId: string) => {
     try {
       const res = await api.serveNext(queueId);
+      sound.playCallChime();
       addToast(res.message, 'success');
       await loadQueueDetails(queueId);
       await loadQueues(queueId);
@@ -118,10 +147,11 @@ export function App() {
     }
   };
 
-  // Requirement 5: Move token Up
+  // Move Up
   const handleMoveUp = async (tokenId: string) => {
     try {
       const res = await api.moveTokenUp(tokenId);
+      sound.playTick();
       addToast(res.message, 'info');
       if (activeQueueId) await loadQueueDetails(activeQueueId);
     } catch (err: any) {
@@ -129,10 +159,11 @@ export function App() {
     }
   };
 
-  // Requirement 5: Move token Down
+  // Move Down
   const handleMoveDown = async (tokenId: string) => {
     try {
       const res = await api.moveTokenDown(tokenId);
+      sound.playTick();
       addToast(res.message, 'info');
       if (activeQueueId) await loadQueueDetails(activeQueueId);
     } catch (err: any) {
@@ -140,7 +171,7 @@ export function App() {
     }
   };
 
-  // Requirement 7: Cancel token
+  // Cancel Token
   const handleCancelConfirm = async (tokenId: string, reason: string) => {
     try {
       const res = await api.cancelToken(tokenId, reason);
@@ -155,7 +186,7 @@ export function App() {
     }
   };
 
-  // Complete service
+  // Complete Service
   const handleCompleteService = async (tokenId: string) => {
     try {
       const res = await api.completeToken(tokenId);
@@ -174,7 +205,7 @@ export function App() {
   const handleDeleteQueue = async (queueId: string) => {
     try {
       await api.deleteQueue(queueId);
-      addToast('Queue deleted successfully', 'info');
+      addToast('Queue deleted', 'info');
       await loadQueues();
       loadAnalytics();
     } catch (err: any) {
@@ -182,7 +213,7 @@ export function App() {
     }
   };
 
-  // Quick Demo Login from landing
+  // Quick Demo Login
   const handleOneClickDemo = async () => {
     try {
       const res = await api.login({
@@ -190,10 +221,10 @@ export function App() {
         password: 'password123'
       });
       setUser(res.user);
-      addToast(`Welcome back, ${res.user.name}!`, 'success');
+      addToast(`Manager: ${res.user.name}`, 'success');
       await loadQueues();
       await loadAnalytics();
-    } catch (err: any) {
+    } catch {
       setIsAuthOpen(true);
     }
   };
@@ -204,11 +235,11 @@ export function App() {
     setQueues([]);
     setQueueDetails(null);
     setAnalytics(null);
-    addToast('Signed out successfully', 'info');
+    addToast('Signed out', 'info');
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900">
+    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans selection:bg-slate-200">
       <Navbar
         user={user}
         activeTab={activeTab}
@@ -222,76 +253,64 @@ export function App() {
 
       <main className="flex-1">
         {!user ? (
-          /* Landing Hero for Unauthenticated User with instant Demo Button */
-          <div className="max-w-5xl mx-auto px-4 py-16 sm:py-24 text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs font-semibold mb-6">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-              Full-Stack Express.js + TypeScript + Shadcn UI
+          /* Un-slopped Landing: Quiet chrome, utilitarian, honest typography */
+          <div className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 rounded-md text-xs font-mono font-medium mb-6">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Express + TypeScript + Neon Postgres
             </div>
 
-            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-950 mb-6 leading-tight">
-              Real-Time Queue Management <br className="hidden sm:inline" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-                & Predictive Analytics
-              </span>
+            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mb-4 leading-tight">
+              Queue management without the friction.
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto mb-10">
-              Manage multi-counter queues, reorder customer tokens in real time, call next in line with
-              one click, and visualize wait-time telemetry and throughput charts.
+            <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto mb-8 leading-relaxed">
+              Order customers in real time. Move tokens up or down. Call the next customer with one keystroke, and review wait times with live telemetry.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button
                 variant="primary"
                 size="lg"
                 onClick={handleOneClickDemo}
-                className="w-full sm:w-auto shadow-lg shadow-blue-500/25 text-base px-8 py-3.5 font-bold"
+                className="w-full sm:w-auto h-11 px-6 font-semibold shadow-xs"
               >
-                <Sparkles className="w-5 h-5 mr-2 text-amber-300" />
-                Launch Demo Manager (1-Click)
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <span>Open demo terminal</span>
+                <ArrowRight className="w-4 h-4 ml-1.5" />
               </Button>
               <Button
                 variant="outline"
                 size="lg"
                 onClick={() => setIsAuthOpen(true)}
-                className="w-full sm:w-auto text-base px-6 py-3.5 bg-white"
+                className="w-full sm:w-auto h-11 px-6 bg-white"
               >
-                <ShieldCheck className="w-5 h-5 mr-2 text-slate-600" />
-                Sign In / Register
+                Manager sign in
               </Button>
             </div>
 
-            {/* Feature Highlights Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 text-left">
-              <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs">
-                <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-3">
-                  <Layers className="w-5 h-5" />
-                </div>
-                <h3 className="font-bold text-slate-900 mb-1">Multi-Queue Orchestration</h3>
-                <p className="text-xs text-slate-500">
-                  Create named queues with custom prefix codes, separate service booths, and track active loads.
+            {/* Feature specs */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-16 text-left border-t border-slate-200/80 pt-10">
+              <div className="p-4 bg-white rounded-xl border border-slate-200/80">
+                <Layers className="w-4 h-4 text-slate-700 mb-2" />
+                <h3 className="font-bold text-xs text-slate-900 mb-1">Multi-Queue Dispatch</h3>
+                <p className="text-xs text-slate-500 leading-normal">
+                  Independent service lines with custom prefixes and automatic token numbering.
                 </p>
               </div>
 
-              <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs">
-                <div className="h-10 w-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-3">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <h3 className="font-bold text-slate-900 mb-1">Dynamic Position Reordering</h3>
-                <p className="text-xs text-slate-500">
-                  Move tokens up or down the line seamlessly, assign top token with 1-click, and handle cancellations cleanly.
+              <div className="p-4 bg-white rounded-xl border border-slate-200/80">
+                <Zap className="w-4 h-4 text-slate-700 mb-2" />
+                <h3 className="font-bold text-xs text-slate-900 mb-1">One-Touch Reorder</h3>
+                <p className="text-xs text-slate-500 leading-normal">
+                  Adjust position order with spring physics, priority flags, or call next with Spacebar.
                 </p>
               </div>
 
-              <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs">
-                <div className="h-10 w-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-3">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <h3 className="font-bold text-slate-900 mb-1">Telemetry & Wait-Time Analytics</h3>
-                <p className="text-xs text-slate-500">
-                  Interactive Recharts dashboard tracking arrival trends, average wait duration, and throughput metrics.
+              <div className="p-4 bg-white rounded-xl border border-slate-200/80">
+                <Clock className="w-4 h-4 text-slate-700 mb-2" />
+                <h3 className="font-bold text-xs text-slate-900 mb-1">Wait Telemetry</h3>
+                <p className="text-xs text-slate-500 leading-normal">
+                  Calculate exact wait times and arrival intervals powered by Neon Lakebase Postgres.
                 </p>
               </div>
             </div>
@@ -312,12 +331,20 @@ export function App() {
             onOpenCreateQueue={() => setIsCreateQueueOpen(true)}
             onDeleteQueue={handleDeleteQueue}
           />
-        ) : (
+        ) : activeTab === 'analytics' ? (
           <AnalyticsDashboard
             analytics={analytics}
             queues={queues}
             loading={loading}
             onRefresh={(qId) => loadAnalytics(qId)}
+          />
+        ) : (
+          <PublicDisplayModal
+            queues={queues}
+            activeQueueId={activeQueueId}
+            queueDetails={queueDetails}
+            onSelectQueue={handleSelectQueue}
+            onClose={() => setActiveTab('queue')}
           />
         )}
       </main>
@@ -328,7 +355,7 @@ export function App() {
         onClose={() => setIsAuthOpen(false)}
         onSuccess={(u) => {
           setUser(u);
-          addToast(`Signed in as ${u.name}`, 'success');
+          addToast(`Manager: ${u.name}`, 'success');
           loadQueues();
           loadAnalytics();
         }}
@@ -350,7 +377,8 @@ export function App() {
         queues={queues}
         selectedQueueId={activeQueueId}
         onTokenAdded={(token) => {
-          addToast(`Token ${token.tokenNumber} added to queue`, 'success');
+          sound.playTick();
+          addToast(`Token ${token.tokenNumber} added`, 'success');
           if (activeQueueId) loadQueueDetails(activeQueueId);
           loadQueues(token.queueId);
           loadAnalytics(token.queueId);
@@ -364,7 +392,7 @@ export function App() {
         onConfirm={handleCancelConfirm}
       />
 
-      {/* Toast Notification Layer */}
+      {/* Toast Layer */}
       <ToastContainer toasts={toasts} onDismiss={removeToast} />
     </div>
   );
