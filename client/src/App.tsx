@@ -121,7 +121,6 @@ export function App() {
   // Keyboard Shortcuts: Space to Serve Next, 'n' to Add Token
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input or textarea or modal is open
       const target = e.target as HTMLElement;
       if (
         target.tagName === 'INPUT' ||
@@ -294,18 +293,18 @@ export function App() {
 
       {/* Network Connection Error Banner */}
       {networkError && (
-        <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-2.5 text-xs text-destructive flex items-center justify-between">
+        <div className="bg-destructive/10 border-b border-destructive/20 px-3 sm:px-4 py-2.5 text-xs text-destructive flex items-center justify-between">
           <div className="flex items-center gap-2 max-w-4xl mx-auto w-full">
             <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
-            <span className="font-medium">{networkError}</span>
+            <span className="font-medium truncate">{networkError}</span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => loadQueues(activeQueueId || undefined)}
-              className="h-6 px-2 text-[11px] ml-auto"
+              className="h-6 px-2 text-[11px] ml-auto shrink-0"
             >
               <RefreshCw className="w-3 h-3 mr-1" />
-              Retry Connection
+              Retry
             </Button>
           </div>
         </div>
@@ -314,27 +313,27 @@ export function App() {
       <main className="flex-1">
         {!user ? (
           /* Utilitarian landing screen */
-          <div className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-secondary text-secondary-foreground border border-border rounded-[var(--radius)] text-xs font-mono font-medium mb-6">
-              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-              Express + TypeScript + Neon Postgres
+          <div className="max-w-4xl mx-auto px-4 py-10 sm:py-20 text-center">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-secondary text-secondary-foreground border border-border rounded-[var(--radius)] text-xs font-mono font-medium mb-5 sm:mb-6">
+              <span className="h-2 w-2 rounded-full bg-primary animate-pulse shrink-0" />
+              <span className="truncate">Express + TypeScript + Neon Postgres</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-serif font-bold tracking-tight text-foreground mb-4 leading-tight">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-serif font-bold tracking-tight text-foreground mb-3 sm:mb-4 leading-tight">
               Queue management without the friction.
             </h1>
 
-            <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto mb-8 leading-relaxed font-sans">
+            <p className="text-xs sm:text-base text-muted-foreground max-w-xl mx-auto mb-6 sm:mb-8 leading-relaxed font-sans px-2">
               Order customers in real time. Move tokens up or down. Call the next customer with one keystroke, and review wait times with live telemetry.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3 max-w-sm sm:max-w-none mx-auto">
               <Button
                 variant="primary"
                 size="lg"
                 loading={loading}
                 onClick={handleOneClickDemo}
-                className="w-full sm:w-auto h-11 px-6 font-semibold shadow-sm"
+                className="w-full sm:w-auto h-10.5 sm:h-11 px-5 sm:px-6 font-semibold shadow-sm text-xs sm:text-sm"
               >
                 <span>Open demo terminal</span>
                 <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -343,15 +342,15 @@ export function App() {
                 variant="outline"
                 size="lg"
                 onClick={() => setIsAuthOpen(true)}
-                className="w-full sm:w-auto h-11 px-6"
+                className="w-full sm:w-auto h-10.5 sm:h-11 px-5 sm:px-6 text-xs sm:text-sm"
               >
                 Manager sign in
               </Button>
             </div>
 
             {/* Feature specs */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-16 text-left border-t border-border pt-10">
-              <div className="p-5 bg-card text-card-foreground rounded-[var(--radius)] border border-border shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-4 mt-10 sm:mt-16 text-left border-t border-border pt-8 sm:pt-10">
+              <div className="p-4 sm:p-5 bg-card text-card-foreground rounded-[var(--radius)] border border-border shadow-sm">
                 <Layers className="w-4 h-4 text-primary mb-2" />
                 <h3 className="font-bold text-xs text-foreground mb-1">Multi-Queue Dispatch</h3>
                 <p className="text-xs text-muted-foreground leading-normal">
@@ -359,7 +358,7 @@ export function App() {
                 </p>
               </div>
 
-              <div className="p-5 bg-card text-card-foreground rounded-[var(--radius)] border border-border shadow-sm">
+              <div className="p-4 sm:p-5 bg-card text-card-foreground rounded-[var(--radius)] border border-border shadow-sm">
                 <Zap className="w-4 h-4 text-primary mb-2" />
                 <h3 className="font-bold text-xs text-foreground mb-1">One-Touch Reorder</h3>
                 <p className="text-xs text-muted-foreground leading-normal">
@@ -367,7 +366,7 @@ export function App() {
                 </p>
               </div>
 
-              <div className="p-5 bg-card text-card-foreground rounded-[var(--radius)] border border-border shadow-sm">
+              <div className="p-4 sm:p-5 bg-card text-card-foreground rounded-[var(--radius)] border border-border shadow-sm sm:col-span-2 md:col-span-1">
                 <Clock className="w-4 h-4 text-primary mb-2" />
                 <h3 className="font-bold text-xs text-foreground mb-1">Wait Telemetry</h3>
                 <p className="text-xs text-muted-foreground leading-normal">

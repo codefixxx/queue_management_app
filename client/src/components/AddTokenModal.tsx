@@ -85,11 +85,11 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
         )}
 
         {/* Live Token Ticket Preview */}
-        <div className="p-4 bg-secondary/70 border border-border rounded-[var(--radius)] relative overflow-hidden">
+        <div className="p-3.5 sm:p-4 bg-secondary/70 border border-border rounded-[var(--radius)] relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Ticket className="w-5 h-5 text-primary" />
-              <span className="text-xs font-semibold text-foreground uppercase tracking-wide">
+              <Ticket className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+              <span className="text-[11px] sm:text-xs font-semibold text-foreground uppercase tracking-wide">
                 New Token Ticket
               </span>
             </div>
@@ -100,16 +100,16 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
 
           <div className="mt-3 flex items-baseline justify-between">
             <div>
-              <span className="text-3xl font-mono font-extrabold text-foreground tracking-tight">
+              <span className="text-2xl sm:text-3xl font-mono font-extrabold text-foreground tracking-tight">
                 {previewTokenNumber}
               </span>
-              <span className="text-xs text-muted-foreground block mt-0.5">
+              <span className="text-xs text-muted-foreground block mt-0.5 truncate max-w-[150px] sm:max-w-none">
                 Line: <strong className="text-foreground">{activeQueue?.name || 'Main Queue'}</strong>
               </span>
             </div>
             <div className="text-right">
-              <span className="text-xs text-muted-foreground block font-mono">EST. POSITION</span>
-              <span className="text-base font-bold text-foreground font-mono">
+              <span className="text-[10px] sm:text-xs text-muted-foreground block font-mono">EST. POSITION</span>
+              <span className="text-sm sm:text-base font-bold text-foreground font-mono">
                 #{(activeQueue?.counts?.waiting || 0) + 1} in line
               </span>
             </div>
@@ -197,16 +197,16 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
             type="text"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. Needs document verification or account review"
+            placeholder="e.g. Needs document verification"
             className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-          <Button type="button" variant="outline" size="md" onClick={onClose}>
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2 border-t border-border">
+          <Button type="button" variant="outline" size="md" onClick={onClose} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button type="submit" variant="primary" size="md" loading={loading} className="shadow-sm">
+          <Button type="submit" variant="primary" size="md" loading={loading} className="w-full sm:w-auto shadow-sm">
             <UserPlus className="w-4 h-4 mr-1.5" />
             Issue Token
           </Button>

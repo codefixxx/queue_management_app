@@ -66,31 +66,32 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-card/90 backdrop-blur-md transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand */}
-        <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-[var(--radius)] bg-primary text-primary-foreground flex items-center justify-center font-mono font-bold text-xs shadow-xs">
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="h-7 w-7 rounded-[var(--radius)] bg-primary text-primary-foreground flex items-center justify-center font-mono font-bold text-xs shadow-xs shrink-0">
             Q
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-serif font-bold text-base text-foreground tracking-tight">QueueFlow</span>
-            <span className="text-[10px] text-muted-foreground font-mono bg-secondary px-1.5 py-0.5 rounded border border-border">v1.2</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="font-serif font-bold text-sm sm:text-base text-foreground tracking-tight">QueueFlow</span>
+            <span className="hidden sm:inline-block text-[10px] text-muted-foreground font-mono bg-secondary px-1.5 py-0.5 rounded border border-border">v1.2</span>
           </div>
         </div>
 
         {/* Operational Navigation Tabs */}
         {user && (
-          <nav className="flex items-center gap-1 bg-secondary/80 p-0.5 rounded-[var(--radius)] border border-border">
+          <nav className="flex items-center gap-0.5 sm:gap-1 bg-secondary/80 p-0.5 rounded-[var(--radius)] border border-border">
             <button
               onClick={() => setActiveTab('queue')}
-              className={`flex items-center gap-1.5 px-3 py-1.2 rounded-[var(--radius)] text-xs font-medium transition-all cursor-pointer ${
+              title="Dispatch Line"
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.2 rounded-[var(--radius)] text-xs font-medium transition-all cursor-pointer ${
                 activeTab === 'queue'
                   ? 'bg-card text-foreground shadow-xs font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Inbox className="w-3.5 h-3.5" />
-              <span>Dispatch</span>
+              <Inbox className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">Dispatch</span>
               {totalWaiting > 0 && (
                 <span className="px-1.5 py-0.2 bg-primary text-primary-foreground rounded text-[10px] font-mono font-bold">
                   {totalWaiting}
@@ -99,31 +100,33 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('analytics')}
-              className={`flex items-center gap-1.5 px-3 py-1.2 rounded-[var(--radius)] text-xs font-medium transition-all cursor-pointer ${
+              title="Performance Metrics"
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.2 rounded-[var(--radius)] text-xs font-medium transition-all cursor-pointer ${
                 activeTab === 'analytics'
                   ? 'bg-card text-foreground shadow-xs font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <BarChart2 className="w-3.5 h-3.5" />
-              <span>Metrics</span>
+              <BarChart2 className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">Metrics</span>
             </button>
             <button
               onClick={() => setActiveTab('display')}
-              className={`flex items-center gap-1.5 px-3 py-1.2 rounded-[var(--radius)] text-xs font-medium transition-all cursor-pointer ${
+              title="Kiosk Monitor Display"
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.2 rounded-[var(--radius)] text-xs font-medium transition-all cursor-pointer ${
                 activeTab === 'display'
                   ? 'bg-card text-foreground shadow-xs font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Tv className="w-3.5 h-3.5" />
-              <span>Monitor</span>
+              <Tv className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">Monitor</span>
             </button>
           </nav>
         )}
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Dark / Light Mode Toggle */}
           <button
             onClick={toggleDarkMode}
@@ -136,7 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {user ? (
             <>
-              {/* Keyboard shortcuts hint */}
+              {/* Keyboard shortcuts hint (Large screens only) */}
               <div
                 className="hidden xl:flex items-center gap-1 text-[11px] text-muted-foreground border border-border rounded px-1.5 py-0.5"
                 title="Keyboard: Space to serve next, N for new token"
@@ -149,7 +152,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Sound Toggle */}
               <button
                 onClick={toggleSound}
-                className="p-1.5 rounded-[var(--radius)] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                className="p-1.5 rounded-[var(--radius)] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer hidden xs:inline-flex"
                 title={soundOn ? 'Counter Chime On' : 'Counter Chime Muted'}
               >
                 {soundOn ? <Volume2 className="w-4 h-4 text-primary" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
@@ -159,7 +162,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={onOpenCreateQueue}
-                className="hidden sm:inline-flex h-8 px-2.5 text-xs"
+                className="hidden lg:inline-flex h-8 px-2.5 text-xs"
               >
                 New Line
               </Button>
@@ -169,27 +172,29 @@ export const Navbar: React.FC<NavbarProps> = ({
                   variant="primary"
                   size="sm"
                   onClick={onOpenAddToken}
-                  className="h-8 px-3 text-xs"
+                  className="h-8 px-2 sm:px-3 text-xs"
+                  title="Issue Ticket"
                 >
-                  <Plus className="w-3.5 h-3.5 mr-1" />
-                  Issue Ticket
+                  <Plus className="w-3.5 h-3.5 sm:mr-1 shrink-0" />
+                  <span className="hidden sm:inline">Issue Ticket</span>
                 </Button>
               )}
 
-              {/* User Profile */}
-              <div className="flex items-center gap-2 pl-2 border-l border-border">
-                <span className="text-xs font-semibold text-foreground hidden md:block">{user.name}</span>
+              {/* User Profile & Sign Out */}
+              <div className="flex items-center gap-1.5 sm:gap-2 pl-1 sm:pl-2 border-l border-border">
+                <span className="text-xs font-semibold text-foreground hidden md:block max-w-[120px] truncate">{user.name}</span>
                 <button
                   onClick={onLogout}
                   title="Sign out"
                   className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer"
+                  aria-label="Sign out"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
               </div>
             </>
           ) : (
-            <Button variant="primary" size="sm" onClick={onOpenAuth}>
+            <Button variant="primary" size="sm" onClick={onOpenAuth} className="h-8 px-3 text-xs">
               Sign In
             </Button>
           )}

@@ -72,7 +72,7 @@ export const CreateQueueModal: React.FC<CreateQueueModalProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-foreground mb-1">Token Prefix</label>
             <input
@@ -104,11 +104,11 @@ export const CreateQueueModal: React.FC<CreateQueueModalProps> = ({
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-          <Button type="button" variant="outline" size="md" onClick={onClose}>
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2 border-t border-border">
+          <Button type="button" variant="outline" size="md" onClick={onClose} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button type="submit" variant="primary" size="md" loading={loading} className="shadow-sm">
+          <Button type="submit" variant="primary" size="md" loading={loading} className="w-full sm:w-auto shadow-sm">
             Create Queue
           </Button>
         </div>

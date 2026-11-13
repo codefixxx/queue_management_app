@@ -55,7 +55,7 @@ export const CancelTokenModal: React.FC<CancelTokenModalProps> = ({
             <span className="font-semibold block text-destructive">
               Are you sure you want to cancel token {token.tokenNumber}?
             </span>
-            <span className="text-muted-foreground">
+            <span className="text-muted-foreground mt-0.5 block">
               Customer: {token.customerName} ({token.priority} Priority, #{token.position} in line)
             </span>
           </div>
@@ -78,7 +78,7 @@ export const CancelTokenModal: React.FC<CancelTokenModalProps> = ({
                   onChange={() => setReason(r)}
                   className="text-destructive focus:ring-destructive"
                 />
-                <span>{r}</span>
+                <span className="truncate">{r}</span>
               </label>
             ))}
           </div>
@@ -95,11 +95,11 @@ export const CancelTokenModal: React.FC<CancelTokenModalProps> = ({
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-          <Button type="button" variant="outline" size="md" onClick={onClose}>
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2 border-t border-border">
+          <Button type="button" variant="outline" size="md" onClick={onClose} className="w-full sm:w-auto">
             Back to Queue
           </Button>
-          <Button type="submit" variant="destructive" size="md" loading={loading} className="shadow-sm">
+          <Button type="submit" variant="destructive" size="md" loading={loading} className="w-full sm:w-auto shadow-sm">
             Confirm Cancellation
           </Button>
         </div>
