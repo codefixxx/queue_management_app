@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AnalyticsData, QueueSummary } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
-import { AnalyticsSkeleton } from './ui/Skeletons';
+import { AnalyticsSkeleton } from './ui/Skeleton';
 import {
   Clock,
   Users,

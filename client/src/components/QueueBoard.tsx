@@ -4,8 +4,7 @@ import { QueueDetails, QueueSummary, Token } from '../types';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
-import { Skeleton } from './ui/Skeleton';
-import { QueueBoardSkeleton } from './ui/Skeletons';
+import { Skeleton, QueueBoardSkeleton } from './ui/Skeleton';
 import {
   ChevronUp,
   ChevronDown,

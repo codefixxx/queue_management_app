@@ -147,29 +147,27 @@ export const PublicDisplayModal: React.FC<PublicDisplayProps> = ({
               [1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-12 bg-slate-800/60 rounded-xl animate-pulse" />
               ))
+            ) : waitingTokens.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-500">No customers waiting</div>
             ) : (
               waitingTokens.slice(0, 6).map((t, idx) => (
-              <motion.div
-                key={t.id}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className={`flex items-center justify-between p-3 rounded-xl border ${
-                  idx === 0
-                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
-                    : 'bg-slate-850/60 border-slate-800/80 text-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-slate-400">#{t.position}</span>
-                  <span className="font-mono font-bold text-lg text-white">{t.tokenNumber}</span>
-                </div>
-                <span className="text-xs font-medium truncate max-w-[120px]">{t.customerName}</span>
-              </motion.div>
-            ))
-            )}
-
-            {queueDetails && waitingTokens.length === 0 && (
-              <div className="py-12 text-center text-xs text-slate-500">No customers waiting</div>
+                <motion.div
+                  key={t.id}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className={`flex items-center justify-between p-3 rounded-xl border ${
+                    idx === 0
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+                      : 'bg-slate-850/60 border-slate-800/80 text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs text-slate-400">#{t.position}</span>
+                    <span className="font-mono font-bold text-lg text-white">{t.tokenNumber}</span>
+                  </div>
+                  <span className="text-xs font-medium truncate max-w-[120px]">{t.customerName}</span>
+                </motion.div>
+              ))
             )}
           </div>
         </div>
@@ -177,4 +175,3 @@ export const PublicDisplayModal: React.FC<PublicDisplayProps> = ({
     </div>
   );
 };
-
