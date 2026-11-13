@@ -9,10 +9,11 @@ import { AuthModal } from './components/AuthModal';
 import { CreateQueueModal } from './components/CreateQueueModal';
 import { AddTokenModal } from './components/AddTokenModal';
 import { CancelTokenModal } from './components/CancelTokenModal';
+import { TokenSuccessModal } from './components/TokenSuccessModal';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { Button } from './components/ui/Button';
 import { sound } from './utils/sound';
-import { ArrowRight, Layers, Clock, Zap } from 'lucide-react';
+import { ArrowRight, Layers, Clock, Zap, AlertCircle, RefreshCw } from 'lucide-react';
 
 export function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -22,11 +23,15 @@ export function App() {
   const [queueDetails, setQueueDetails] = useState<QueueDetails | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
 
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [networkError, setNetworkError] = useState<string | null>(null);
+
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isCreateQueueOpen, setIsCreateQueueOpen] = useState(false);
   const [isAddTokenOpen, setIsAddTokenOpen] = useState(false);
   const [cancelTargetToken, setCancelTargetToken] = useState<Token | null>(null);
+  const [successToken, setSuccessToken] = useState<Token | null>(null);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -42,10 +47,15 @@ export function App() {
   // Load Queue Details
   const loadQueueDetails = useCallback(async (id: string) => {
     try {
+      setLoading(true);
       const res = await api.getQueueDetails(id);
       setQueueDetails(res.queue);
+      setNetworkError(null);
     } catch (err: any) {
       console.error('Failed to load queue details:', err);
+      setNetworkError(err.message || 'Failed to load queue details');
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -65,6 +75,7 @@ export function App() {
       setLoading(true);
       const res = await api.getQueues();
       setQueues(res.queues);
+      setNetworkError(null);
 
       if (res.queues.length > 0) {
         const nextId = preferQueueId && res.queues.some((q) => q.id === preferQueueId)
@@ -79,6 +90,7 @@ export function App() {
       }
     } catch (err: any) {
       console.error('Failed to load queues:', err);
+      setNetworkError(err.message || 'Unable to load queues from server');
     } finally {
       setLoading(false);
     }
@@ -97,17 +109,21 @@ export function App() {
         .catch(() => {
           api.logout();
           setUser(null);
+        })
+        .finally(() => {
+          setIsBootstrapping(false);
         });
+    } else {
+      setIsBootstrapping(false);
     }
   }, []);
 
   // Keyboard ergonomics (Space to serve next, N for new token)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing in input/textarea or modal is open
       const activeEl = document.activeElement;
       const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
-      if (isInput || isAuthOpen || isCreateQueueOpen || isAddTokenOpen || cancelTargetToken) return;
+      if (isInput || isAuthOpen || isCreateQueueOpen || isAddTokenOpen || cancelTargetToken || successToken) return;
 
       if (e.code === 'Space' && activeTab === 'queue' && activeQueueId && queueDetails?.waitingTokens[0]) {
         e.preventDefault();
@@ -126,7 +142,7 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, activeQueueId, queueDetails, isAuthOpen, isCreateQueueOpen, isAddTokenOpen, cancelTargetToken]);
+  }, [activeTab, activeQueueId, queueDetails, isAuthOpen, isCreateQueueOpen, isAddTokenOpen, cancelTargetToken, successToken]);
 
   const handleSelectQueue = (id: string) => {
     setActiveQueueId(id);
@@ -216,6 +232,7 @@ export function App() {
   // Quick Demo Login
   const handleOneClickDemo = async () => {
     try {
+      setLoading(true);
       const res = await api.login({
         email: 'manager@queueflow.com',
         password: 'password123'
@@ -224,8 +241,11 @@ export function App() {
       addToast(`Manager: ${res.user.name}`, 'success');
       await loadQueues();
       await loadAnalytics();
-    } catch {
+    } catch (err: any) {
+      addToast(err.message || 'Demo login failed', 'error');
       setIsAuthOpen(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -237,6 +257,22 @@ export function App() {
     setAnalytics(null);
     addToast('Signed out', 'info');
   };
+
+  const activeQueue = queues.find((q) => q.id === activeQueueId) || null;
+
+  // Initial App Loading Screen
+  if (isBootstrapping) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="text-center space-y-3">
+          <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center text-white font-mono font-bold mx-auto text-sm animate-pulse">
+            Q
+          </div>
+          <p className="text-xs font-mono text-slate-500">Initializing QueueFlow terminal...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans selection:bg-slate-200">
@@ -251,9 +287,28 @@ export function App() {
         onOpenAuth={() => setIsAuthOpen(true)}
       />
 
+      {/* Network Connection Error Banner */}
+      {networkError && (
+        <div className="bg-rose-50 border-b border-rose-200 px-4 py-2.5 text-xs text-rose-800 flex items-center justify-between">
+          <div className="flex items-center gap-2 max-w-4xl mx-auto w-full">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span className="font-medium">{networkError}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => loadQueues(activeQueueId || undefined)}
+              className="h-6 px-2 text-[11px] bg-white border-rose-200 text-rose-700 ml-auto"
+            >
+              <RefreshCw className="w-3 h-3 mr-1" />
+              Retry Connection
+            </Button>
+          </div>
+        </div>
+      )}
+
       <main className="flex-1">
         {!user ? (
-          /* Un-slopped Landing: Quiet chrome, utilitarian, honest typography */
+          /* Utilitarian landing screen */
           <div className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 rounded-md text-xs font-mono font-medium mb-6">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -272,6 +327,7 @@ export function App() {
               <Button
                 variant="primary"
                 size="lg"
+                loading={loading}
                 onClick={handleOneClickDemo}
                 className="w-full sm:w-auto h-11 px-6 font-semibold shadow-xs"
               >
@@ -378,10 +434,22 @@ export function App() {
         selectedQueueId={activeQueueId}
         onTokenAdded={(token) => {
           sound.playTick();
-          addToast(`Token ${token.tokenNumber} added`, 'success');
+          setSuccessToken(token);
           if (activeQueueId) loadQueueDetails(activeQueueId);
           loadQueues(token.queueId);
           loadAnalytics(token.queueId);
+        }}
+      />
+
+      {/* Ticket Issued Success Screen */}
+      <TokenSuccessModal
+        isOpen={!!successToken}
+        onClose={() => setSuccessToken(null)}
+        token={successToken}
+        queue={activeQueue}
+        onIssueAnother={() => {
+          setSuccessToken(null);
+          setIsAddTokenOpen(true);
         }}
       />
 

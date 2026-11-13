@@ -25,18 +25,25 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers
-  });
+  try {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers
+    });
 
-  const data = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({}));
 
-  if (!res.ok) {
-    throw new Error(data.error || `Request failed with status ${res.status}`);
+    if (!res.ok) {
+      throw new Error(data.error || `Server responded with error ${res.status}`);
+    }
+
+    return data as T;
+  } catch (err: any) {
+    if (err.name === 'TypeError' && err.message?.toLowerCase().includes('fetch')) {
+      throw new Error('Connection lost: Unable to reach the queue server. Please check your network or backend service.');
+    }
+    throw err;
   }
-
-  return data as T;
 }
 
 // Authentication API
@@ -139,4 +146,3 @@ export const api = {
     return request<AnalyticsData>(`/analytics${query}`);
   }
 };
-

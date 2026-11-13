@@ -4,6 +4,7 @@ import { QueueDetails, QueueSummary, Token } from '../types';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
+import { Skeleton } from './ui/Skeleton';
 import {
   ChevronUp,
   ChevronDown,
@@ -38,6 +39,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
   activeQueueId,
   onSelectQueue,
   queueDetails,
+  loading,
   onServeNext,
   onMoveUp,
   onMoveDown,
@@ -300,7 +302,26 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
         </CardHeader>
 
         <CardContent className="p-0">
-          {waitingTokens.length === 0 ? (
+          {loading ? (
+            <div className="p-4 space-y-3">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="flex items-center justify-between p-3 border border-slate-100 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-6 w-8 rounded" />
+                    <Skeleton className="h-7 w-16 rounded" />
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-3.5 w-32" />
+                      <Skeleton className="h-2.5 w-24" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Skeleton className="h-7 w-8 rounded" />
+                    <Skeleton className="h-7 w-8 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : waitingTokens.length === 0 ? (
             <div className="py-14 text-center">
               <p className="text-xs text-slate-500 font-medium">No customers currently waiting in this line.</p>
               <Button variant="outline" size="sm" onClick={onOpenAddToken} className="mt-3 text-xs">

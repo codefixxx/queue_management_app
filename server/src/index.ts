@@ -8,6 +8,14 @@ import analyticsRoutes from './routes/analytics.routes';
 
 dotenv.config();
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -41,8 +49,11 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled API Error:', err);
-  res.status(500).json({ error: err.message || 'Internal Server Error' });
+  console.error('API Error:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+    code: err.code || 'INTERNAL_ERROR'
+  });
 });
 
 app.listen(PORT, () => {
@@ -50,4 +61,3 @@ app.listen(PORT, () => {
 });
 
 export default app;
-
