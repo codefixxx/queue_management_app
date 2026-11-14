@@ -40,8 +40,18 @@ export const PublicDisplayModal: React.FC<PublicDisplayProps> = ({
   };
 
   const activeQueue = queues.find((q) => q.id === activeQueueId) || queues[0];
-  const inServiceToken = queueDetails?.inServiceTokens[0];
-  const waitingTokens = queueDetails?.waitingTokens || [];
+  const isCurrent = queueDetails?.id === activeQueue?.id;
+  const inServiceToken = isCurrent ? queueDetails?.inServiceTokens[0] : undefined;
+  const waitingTokens = isCurrent ? (queueDetails?.waitingTokens || []) : [];
+
+  // Live kiosk polling: update every 5 seconds while counter monitor is open
+  useEffect(() => {
+    if (!activeQueue?.id) return;
+    const interval = setInterval(() => {
+      onSelectQueue(activeQueue.id);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [activeQueue?.id, onSelectQueue]);
 
   return (
     <div className="fixed inset-0 z-50 bg-background text-foreground flex flex-col overflow-hidden transition-colors">
@@ -101,7 +111,7 @@ export const PublicDisplayModal: React.FC<PublicDisplayProps> = ({
           </span>
 
           <AnimatePresence mode="wait">
-            {!queueDetails ? (
+            {!queueDetails || !isCurrent ? (
               <div className="space-y-4 animate-pulse">
                 <div className="h-20 sm:h-32 w-56 sm:w-64 bg-muted rounded-2xl mx-auto" />
                 <div className="h-5 sm:h-6 w-40 sm:w-48 bg-muted rounded mx-auto" />
@@ -146,7 +156,7 @@ export const PublicDisplayModal: React.FC<PublicDisplayProps> = ({
           </div>
 
           <div className="flex-1 space-y-2 overflow-y-auto">
-            {!queueDetails ? (
+            {!queueDetails || !isCurrent ? (
               [1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-11 sm:h-12 bg-muted rounded-[var(--radius)] animate-pulse" />
               ))

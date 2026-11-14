@@ -30,12 +30,15 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   React.useEffect(() => {
-    if (selectedQueueId) {
-      setQueueId(selectedQueueId);
-    } else if (queues.length > 0 && !queueId) {
-      setQueueId(queues[0].id);
+    if (isOpen) {
+      setError(null);
+      if (selectedQueueId) {
+        setQueueId(selectedQueueId);
+      } else if (queues.length > 0 && !queueId) {
+        setQueueId(queues[0].id);
+      }
     }
-  }, [selectedQueueId, queues, queueId]);
+  }, [isOpen, selectedQueueId, queues, queueId]);
 
   const activeQueue = queues.find((q) => q.id === queueId) || queues[0];
 

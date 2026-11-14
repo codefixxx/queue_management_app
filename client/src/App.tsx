@@ -140,10 +140,11 @@ export function App() {
         return;
       }
 
-      if (e.code === 'Space' && activeQueueId && user) {
+      // Only allow operational keyboard dispatch while viewing the active queue board
+      if (activeTab === 'queue' && e.code === 'Space' && activeQueueId && user) {
         e.preventDefault();
         handleServeNext(activeQueueId);
-      } else if ((e.key === 'n' || e.key === 'N') && activeQueueId && user) {
+      } else if (activeTab === 'queue' && (e.key === 'n' || e.key === 'N') && activeQueueId && user) {
         e.preventDefault();
         setIsAddTokenOpen(true);
       }
@@ -151,13 +152,19 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeQueueId, user, isAuthOpen, isCreateQueueOpen, isAddTokenOpen, cancelTargetToken, successToken]);
+  }, [activeTab, activeQueueId, user, isAuthOpen, isCreateQueueOpen, isAddTokenOpen, cancelTargetToken, successToken]);
 
   // Actions
   const handleSelectQueue = (id: string) => {
     setActiveQueueId(id);
     loadQueueDetails(id);
-    loadAnalytics(id);
+  };
+
+  const handleTabChange = (tab: 'queue' | 'analytics' | 'display') => {
+    setActiveTab(tab);
+    if (tab === 'analytics') {
+      loadAnalytics();
+    }
   };
 
   const handleServeNext = async (queueId: string) => {
@@ -285,7 +292,7 @@ export function App() {
       <Navbar
         user={user}
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         queues={queues}
         onOpenCreateQueue={() => setIsCreateQueueOpen(true)}
         onOpenAddToken={() => setIsAddTokenOpen(true)}

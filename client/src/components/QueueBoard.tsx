@@ -53,13 +53,15 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [viewHistory, setViewHistory] = useState(false);
 
-  const waitingTokens = queueDetails?.waitingTokens || [];
-  const inServiceTokens = queueDetails?.inServiceTokens || [];
-  const recentCompleted = queueDetails?.recentCompleted || [];
-  const recentCancelled = queueDetails?.recentCancelled || [];
+  const activeQueue = queues.find((q) => q.id === activeQueueId) || queues[0];
+  const isQueueDetailsCurrent = queueDetails?.id === activeQueue?.id;
+
+  const waitingTokens = isQueueDetailsCurrent ? (queueDetails?.waitingTokens || []) : [];
+  const inServiceTokens = isQueueDetailsCurrent ? (queueDetails?.inServiceTokens || []) : [];
+  const recentCompleted = isQueueDetailsCurrent ? (queueDetails?.recentCompleted || []) : [];
+  const recentCancelled = isQueueDetailsCurrent ? (queueDetails?.recentCancelled || []) : [];
 
   const topToken = waitingTokens[0];
-  const activeQueue = queues.find((q) => q.id === activeQueueId) || queues[0];
 
   const handleAction = async (actionKey: string, fn: () => Promise<any>) => {
     sound.playTick();
@@ -73,7 +75,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
 
   const handleServe = async () => {
     if (!activeQueue || !topToken) return;
-    sound.playCallChime();
+    sound.playTick();
     setActionLoading('serve-next');
     try {
       await onServeNext(activeQueue.id);
@@ -100,7 +102,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
     return `${mins}m`;
   };
 
-  if (loading && (queues.length === 0 || !queueDetails)) {
+  if ((loading && (queues.length === 0 || !queueDetails)) || (loading && !isQueueDetailsCurrent)) {
     return <QueueBoardSkeleton />;
   }
 
@@ -380,7 +382,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             type="button"
-                            disabled={isTop}
+                            disabled={isTop || actionLoading !== null}
                             onClick={() => handleAction(`up-${token.id}`, () => onMoveUp(token.id))}
                             title="Move up in line"
                             className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-[var(--radius)] bg-secondary text-secondary-foreground hover:bg-muted border border-border flex items-center justify-center disabled:opacity-25 disabled:pointer-events-none transition-colors cursor-pointer"
@@ -391,7 +393,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
 
                           <button
                             type="button"
-                            disabled={isBottom}
+                            disabled={isBottom || actionLoading !== null}
                             onClick={() => handleAction(`down-${token.id}`, () => onMoveDown(token.id))}
                             title="Move down in line"
                             className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-[var(--radius)] bg-secondary text-secondary-foreground hover:bg-muted border border-border flex items-center justify-center disabled:opacity-25 disabled:pointer-events-none transition-colors cursor-pointer"
