@@ -123,15 +123,7 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise
     }
 
     const queue = await prisma.queue.findFirst({
-      where: { id: queueId, managerId: req.user!.id },
-      include: {
-        tokens: {
-          orderBy: [
-            { position: 'asc' },
-            { createdAt: 'asc' }
-          ]
-        }
-      }
+      where: { id: queueId, managerId: req.user!.id }
     });
 
     if (!queue) {
@@ -139,23 +131,36 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    const waitingTokens = queue.tokens
-      .filter((t) => t.status === 'WAITING')
-      .sort((a, b) => a.position - b.position);
+    // Bounded queries utilizing index [queueId, status] and [queueId, position]
+    const [waitingTokens, inServiceTokens, completedTokens, cancelledTokens, completedCount, cancelledCount] =
+      await Promise.all([
+        prisma.token.findMany({
+          where: { queueId, status: 'WAITING' },
+          orderBy: [{ position: 'asc' }, { createdAt: 'asc' }]
+        }),
+        prisma.token.findMany({
+          where: { queueId, status: 'IN_SERVICE' },
+          orderBy: { servedAt: 'desc' }
+        }),
+        prisma.token.findMany({
+          where: { queueId, status: 'COMPLETED' },
+          orderBy: { completedAt: 'desc' },
+          take: 10
+        }),
+        prisma.token.findMany({
+          where: { queueId, status: 'CANCELLED' },
+          orderBy: { cancelledAt: 'desc' },
+          take: 10
+        }),
+        prisma.token.count({
+          where: { queueId, status: 'COMPLETED' }
+        }),
+        prisma.token.count({
+          where: { queueId, status: 'CANCELLED' }
+        })
+      ]);
 
-    const inServiceTokens = queue.tokens
-      .filter((t) => t.status === 'IN_SERVICE')
-      .sort((a, b) => (b.servedAt ? new Date(b.servedAt).getTime() : 0) - (a.servedAt ? new Date(a.servedAt).getTime() : 0));
-
-    const completedTokens = queue.tokens
-      .filter((t) => t.status === 'COMPLETED')
-      .sort((a, b) => (b.completedAt ? new Date(b.completedAt).getTime() : 0) - (a.completedAt ? new Date(a.completedAt).getTime() : 0))
-      .slice(0, 10);
-
-    const cancelledTokens = queue.tokens
-      .filter((t) => t.status === 'CANCELLED')
-      .sort((a, b) => (b.cancelledAt ? new Date(b.cancelledAt).getTime() : 0) - (a.cancelledAt ? new Date(a.cancelledAt).getTime() : 0))
-      .slice(0, 10);
+    const totalCount = waitingTokens.length + inServiceTokens.length + completedCount + cancelledCount;
 
     res.json({
       queue: {
@@ -173,9 +178,9 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise
         counts: {
           waiting: waitingTokens.length,
           inService: inServiceTokens.length,
-          completed: queue.tokens.filter((t) => t.status === 'COMPLETED').length,
-          cancelled: queue.tokens.filter((t) => t.status === 'CANCELLED').length,
-          total: queue.tokens.length
+          completed: completedCount,
+          cancelled: cancelledCount,
+          total: totalCount
         }
       }
     });
@@ -270,24 +275,23 @@ router.post('/:id/serve-next', requireAuth, async (req: AuthRequest, res: Respon
       return;
     }
 
-    // Find the token at the top of the queue (lowest position among WAITING tokens)
-    const topToken = await prisma.token.findFirst({
-      where: { queueId, status: 'WAITING' },
-      orderBy: { position: 'asc' }
-    });
-
-    if (!topToken) {
-      res.status(400).json({ error: 'No waiting tokens in the queue to serve' });
-      return;
-    }
-
     const servedTime = new Date();
 
-    // Use a transaction to update topToken to IN_SERVICE and adjust positions of remaining waiting tokens
+    // Use an atomic transaction with concurrency safeguards
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Update topToken to IN_SERVICE
-      const served = await tx.token.update({
-        where: { id: topToken.id },
+      // 1. Find the top waiting token INSIDE the transaction
+      const topToken = await tx.token.findFirst({
+        where: { queueId, status: 'WAITING' },
+        orderBy: [{ position: 'asc' }, { createdAt: 'asc' }]
+      });
+
+      if (!topToken) {
+        return null;
+      }
+
+      // 2. Conditionally update status only if it is still WAITING (prevents TOCTOU race conditions)
+      const updateCount = await tx.token.updateMany({
+        where: { id: topToken.id, status: 'WAITING' },
         data: {
           status: 'IN_SERVICE',
           servedAt: servedTime,
@@ -296,10 +300,18 @@ router.post('/:id/serve-next', requireAuth, async (req: AuthRequest, res: Respon
         }
       });
 
-      // 2. Fetch remaining waiting tokens and re-normalize positions starting from 1
+      if (updateCount.count === 0) {
+        throw new Error('CONCURRENT_UPDATE_CONFLICT');
+      }
+
+      const served = await tx.token.findUnique({
+        where: { id: topToken.id }
+      });
+
+      // 3. Fetch remaining waiting tokens and re-normalize positions starting from 1
       const remainingTokens = await tx.token.findMany({
         where: { queueId, status: 'WAITING' },
-        orderBy: { position: 'asc' }
+        orderBy: [{ position: 'asc' }, { createdAt: 'asc' }]
       });
 
       for (let i = 0; i < remainingTokens.length; i++) {
@@ -315,11 +327,20 @@ router.post('/:id/serve-next', requireAuth, async (req: AuthRequest, res: Respon
       return served;
     });
 
+    if (!result) {
+      res.status(400).json({ error: 'No waiting tokens in the queue to serve' });
+      return;
+    }
+
     res.json({
       message: `Token ${result.tokenNumber} is now assigned for service`,
       token: result
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message === 'CONCURRENT_UPDATE_CONFLICT') {
+      res.status(409).json({ error: 'Queue state changed concurrently. Please try again.' });
+      return;
+    }
     console.error('Serve next token error:', error);
     res.status(500).json({ error: 'Failed to assign top token for service' });
   }

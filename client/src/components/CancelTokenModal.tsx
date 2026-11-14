@@ -8,7 +8,7 @@ interface CancelTokenModalProps {
   isOpen: boolean;
   onClose: () => void;
   token: Token | null;
-  onConfirm: (tokenId: string, reason: string) => Promise<void>;
+  onConfirm: (reason: string) => Promise<void>;
 }
 
 export const CancelTokenModal: React.FC<CancelTokenModalProps> = ({
@@ -26,7 +26,7 @@ export const CancelTokenModal: React.FC<CancelTokenModalProps> = ({
     e.preventDefault();
     setLoading(true);
     try {
-      await onConfirm(token.id, reason);
+      await onConfirm(reason);
       onClose();
     } finally {
       setLoading(false);

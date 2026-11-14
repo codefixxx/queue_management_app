@@ -165,7 +165,6 @@ export function App() {
       const res = await api.serveNext(queueId);
       sound.playChime();
       addToast(res.message, 'success');
-      loadQueueDetails(queueId);
       loadQueues(queueId);
       loadAnalytics(queueId);
     } catch (err: any) {
@@ -204,7 +203,6 @@ export function App() {
       const res = await api.cancelToken(cancelTargetToken.id, reason);
       addToast(res.message, 'info');
       setCancelTargetToken(null);
-      if (activeQueueId) loadQueueDetails(activeQueueId);
       loadQueues(activeQueueId || undefined);
       loadAnalytics(activeQueueId || undefined);
     } catch (err: any) {
@@ -218,7 +216,6 @@ export function App() {
       const res = await api.completeToken(tokenId);
       sound.playChime();
       addToast(res.message, 'success');
-      if (activeQueueId) loadQueueDetails(activeQueueId);
       loadQueues(activeQueueId || undefined);
       loadAnalytics(activeQueueId || undefined);
     } catch (err: any) {
@@ -445,7 +442,6 @@ export function App() {
         onTokenAdded={(token) => {
           sound.playTick();
           setSuccessToken(token);
-          if (activeQueueId) loadQueueDetails(activeQueueId);
           loadQueues(token.queueId);
           loadAnalytics(token.queueId);
         }}

@@ -177,7 +177,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
             variant="ghost"
             size="sm"
             onClick={() => {
-              if (confirm(`Delete queue "${activeQueue?.name}" and all records?`)) {
+              if (activeQueue) {
                 onDeleteQueue(activeQueue.id);
               }
             }}

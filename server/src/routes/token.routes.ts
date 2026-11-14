@@ -29,11 +29,11 @@ const cancelTokenSchema = z.object({
   reason: optionalSanitizedString(300)
 });
 
-// Helper to normalize waiting token positions for a queue
+// Helper to normalize waiting token positions for a queue with deterministic ordering
 async function normalizeWaitingPositions(tx: any, queueId: string) {
   const waitingTokens = await tx.token.findMany({
     where: { queueId, status: 'WAITING' },
-    orderBy: { position: 'asc' }
+    orderBy: [{ position: 'asc' }, { createdAt: 'asc' }]
   });
 
   for (let i = 0; i < waitingTokens.length; i++) {
@@ -124,7 +124,7 @@ router.post('/tokens/:id/move-up', requireAuth, async (req: AuthRequest, res: Re
       return;
     }
 
-    // Find token with queue verification
+    // Verify token exists and belongs to manager's queue
     const token = await prisma.token.findUnique({
       where: { id: tokenId },
       include: { queue: true }
@@ -140,37 +140,41 @@ router.post('/tokens/:id/move-up', requireAuth, async (req: AuthRequest, res: Re
       return;
     }
 
-    if (token.position <= 1) {
-      res.status(400).json({ error: 'Token is already at the top of the queue' });
-      return;
-    }
-
-    const currentPos = token.position;
-    const targetPos = currentPos - 1;
-
-    // Find token currently occupying targetPos
-    const adjacentToken = await prisma.token.findFirst({
-      where: {
-        queueId: token.queueId,
-        status: 'WAITING',
-        position: targetPos
-      }
-    });
-
-    if (!adjacentToken) {
-      // Normalize if positions got out of sync, then update
-      await prisma.$transaction(async (tx) => {
-        await tx.token.update({
-          where: { id: token.id },
-          data: { position: targetPos }
-        });
-        await normalizeWaitingPositions(tx, token.queueId);
+    const { updatedTokens, targetPos, tokenNumber } = await prisma.$transaction(async (tx) => {
+      // Re-read inside transaction to avoid stale position
+      const liveToken = await tx.token.findUnique({
+        where: { id: tokenId }
       });
-    } else {
-      // Swap positions safely using temporary negative position
-      await prisma.$transaction(async (tx) => {
+
+      if (!liveToken || liveToken.status !== 'WAITING') {
+        throw new Error('TOKEN_STATE_INVALID');
+      }
+
+      if (liveToken.position <= 1) {
+        throw new Error('ALREADY_AT_TOP');
+      }
+
+      const currentPos = liveToken.position;
+      const target = currentPos - 1;
+
+      // Find token currently occupying target position
+      const adjacentToken = await tx.token.findFirst({
+        where: {
+          queueId: liveToken.queueId,
+          status: 'WAITING',
+          position: target
+        }
+      });
+
+      if (!adjacentToken) {
         await tx.token.update({
-          where: { id: token.id },
+          where: { id: liveToken.id },
+          data: { position: target }
+        });
+        await normalizeWaitingPositions(tx, liveToken.queueId);
+      } else {
+        await tx.token.update({
+          where: { id: liveToken.id },
           data: { position: -1 }
         });
         await tx.token.update({
@@ -178,22 +182,32 @@ router.post('/tokens/:id/move-up', requireAuth, async (req: AuthRequest, res: Re
           data: { position: currentPos }
         });
         await tx.token.update({
-          where: { id: token.id },
-          data: { position: targetPos }
+          where: { id: liveToken.id },
+          data: { position: target }
         });
-      });
-    }
+      }
 
-    const updatedQueueTokens = await prisma.token.findMany({
-      where: { queueId: token.queueId, status: 'WAITING' },
-      orderBy: { position: 'asc' }
+      const list = await tx.token.findMany({
+        where: { queueId: liveToken.queueId, status: 'WAITING' },
+        orderBy: [{ position: 'asc' }, { createdAt: 'asc' }]
+      });
+
+      return { updatedTokens: list, targetPos: target, tokenNumber: liveToken.tokenNumber };
     });
 
     res.json({
-      message: `Token ${token.tokenNumber} moved up to position ${targetPos}`,
-      tokens: updatedQueueTokens
+      message: `Token ${tokenNumber} moved up to position ${targetPos}`,
+      tokens: updatedTokens
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message === 'ALREADY_AT_TOP') {
+      res.status(400).json({ error: 'Token is already at the top of the queue' });
+      return;
+    }
+    if (error?.message === 'TOKEN_STATE_INVALID') {
+      res.status(400).json({ error: 'Token is no longer waiting in the queue' });
+      return;
+    }
     console.error('Move up error:', error);
     res.status(500).json({ error: 'Failed to move token up' });
   }
@@ -223,38 +237,44 @@ router.post('/tokens/:id/move-down', requireAuth, async (req: AuthRequest, res: 
       return;
     }
 
-    const totalWaiting = await prisma.token.count({
-      where: { queueId: token.queueId, status: 'WAITING' }
-    });
-
-    if (token.position >= totalWaiting) {
-      res.status(400).json({ error: 'Token is already at the bottom of the queue' });
-      return;
-    }
-
-    const currentPos = token.position;
-    const targetPos = currentPos + 1;
-
-    const adjacentToken = await prisma.token.findFirst({
-      where: {
-        queueId: token.queueId,
-        status: 'WAITING',
-        position: targetPos
-      }
-    });
-
-    if (!adjacentToken) {
-      await prisma.$transaction(async (tx) => {
-        await tx.token.update({
-          where: { id: token.id },
-          data: { position: targetPos }
-        });
-        await normalizeWaitingPositions(tx, token.queueId);
+    const { updatedTokens, targetPos, tokenNumber } = await prisma.$transaction(async (tx) => {
+      // Re-read inside transaction
+      const liveToken = await tx.token.findUnique({
+        where: { id: tokenId }
       });
-    } else {
-      await prisma.$transaction(async (tx) => {
+
+      if (!liveToken || liveToken.status !== 'WAITING') {
+        throw new Error('TOKEN_STATE_INVALID');
+      }
+
+      const totalWaiting = await tx.token.count({
+        where: { queueId: liveToken.queueId, status: 'WAITING' }
+      });
+
+      if (liveToken.position >= totalWaiting) {
+        throw new Error('ALREADY_AT_BOTTOM');
+      }
+
+      const currentPos = liveToken.position;
+      const target = currentPos + 1;
+
+      const adjacentToken = await tx.token.findFirst({
+        where: {
+          queueId: liveToken.queueId,
+          status: 'WAITING',
+          position: target
+        }
+      });
+
+      if (!adjacentToken) {
         await tx.token.update({
-          where: { id: token.id },
+          where: { id: liveToken.id },
+          data: { position: target }
+        });
+        await normalizeWaitingPositions(tx, liveToken.queueId);
+      } else {
+        await tx.token.update({
+          where: { id: liveToken.id },
           data: { position: -1 }
         });
         await tx.token.update({
@@ -262,22 +282,32 @@ router.post('/tokens/:id/move-down', requireAuth, async (req: AuthRequest, res: 
           data: { position: currentPos }
         });
         await tx.token.update({
-          where: { id: token.id },
-          data: { position: targetPos }
+          where: { id: liveToken.id },
+          data: { position: target }
         });
-      });
-    }
+      }
 
-    const updatedQueueTokens = await prisma.token.findMany({
-      where: { queueId: token.queueId, status: 'WAITING' },
-      orderBy: { position: 'asc' }
+      const list = await tx.token.findMany({
+        where: { queueId: liveToken.queueId, status: 'WAITING' },
+        orderBy: [{ position: 'asc' }, { createdAt: 'asc' }]
+      });
+
+      return { updatedTokens: list, targetPos: target, tokenNumber: liveToken.tokenNumber };
     });
 
     res.json({
-      message: `Token ${token.tokenNumber} moved down to position ${targetPos}`,
-      tokens: updatedQueueTokens
+      message: `Token ${tokenNumber} moved down to position ${targetPos}`,
+      tokens: updatedTokens
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message === 'ALREADY_AT_BOTTOM') {
+      res.status(400).json({ error: 'Token is already at the bottom of the queue' });
+      return;
+    }
+    if (error?.message === 'TOKEN_STATE_INVALID') {
+      res.status(400).json({ error: 'Token is no longer waiting in the queue' });
+      return;
+    }
     console.error('Move down error:', error);
     res.status(500).json({ error: 'Failed to move token down' });
   }

@@ -66,6 +66,9 @@ router.post('/register', authLimiter, async (req, res): Promise<void> => {
   }
 });
 
+// Pre-computed dummy bcrypt hash to equalize execution time and prevent user enumeration via timing attacks
+const DUMMY_HASH = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
+
 // Login endpoint with rate limiter & brute force protection
 router.post('/login', authLimiter, async (req, res): Promise<void> => {
   try {
@@ -76,6 +79,8 @@ router.post('/login', authLimiter, async (req, res): Promise<void> => {
     });
 
     if (!user) {
+      // Execute dummy comparison to equalize timing profile with existing users
+      await bcrypt.compare(validated.password, DUMMY_HASH);
       console.warn(`[SECURITY] Failed login attempt for non-existent email: ${validated.email} from IP: ${req.ip}`);
       res.status(401).json({ error: 'Invalid email or password' });
       return;

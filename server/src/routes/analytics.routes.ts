@@ -15,11 +15,19 @@ router.get('/', requireAuth, async (req: AuthRequest, res: Response): Promise<vo
       ? { id: cleanQueueId, managerId }
       : { managerId };
 
-    // Fetch user queues
+    // Fetch user queues with minimal telemetry fields (avoids loading customer PII and notes into heap)
     const queues = await prisma.queue.findMany({
       where: queueFilter,
       include: {
-        tokens: true
+        tokens: {
+          select: {
+            id: true,
+            status: true,
+            createdAt: true,
+            servedAt: true,
+            completedAt: true
+          }
+        }
       }
     });
 
