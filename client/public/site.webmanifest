@@ -1,0 +1,17 @@
+{
+  "name": "QueueFlow - Smart Queue & Token Management",
+  "short_name": "QueueFlow",
+  "description": "High-performance real-time queue management system featuring live ticket dispatch, automated counter calling, wait-time telemetry, and public kiosk displays.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d0b",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

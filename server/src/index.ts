@@ -73,16 +73,11 @@ app.use(
       }
 
       const normalizedOrigin = origin.replace(/\/$/, '');
-      if (allowedOrigins.includes(normalizedOrigin)) {
+      if (allowedOrigins.includes(normalizedOrigin) || normalizedOrigin.endsWith('.vercel.app')) {
         return callback(null, true);
       }
 
-      // Automatically permit preview and production deployments on Vercel
-      if (normalizedOrigin.endsWith('.vercel.app')) {
-        return callback(null, true);
-      }
-
-      return callback(new Error('Access blocked by CORS policy'));
+      return callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
