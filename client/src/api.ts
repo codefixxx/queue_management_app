@@ -14,7 +14,7 @@ export function removeAuthToken() {
   localStorage.removeItem('queue_manager_token');
 }
 
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(endpoint: string, options: RequestInit = {}, retries = 1): Promise<T> {
   const token = getAuthToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -25,6 +25,8 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const isGet = !options.method || options.method.toUpperCase() === 'GET';
+
   try {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
@@ -34,11 +36,20 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
+      // If server returned a 5xx error (e.g. database cold start) on an idempotent GET, retry once
+      if (isGet && retries > 0 && res.status >= 500) {
+        await new Promise((r) => setTimeout(r, 600));
+        return request<T>(endpoint, options, retries - 1);
+      }
       throw new Error(data.error || `Server responded with error ${res.status}`);
     }
 
     return data as T;
   } catch (err: any) {
+    if (isGet && retries > 0 && err.name === 'TypeError' && err.message?.toLowerCase().includes('fetch')) {
+      await new Promise((r) => setTimeout(r, 600));
+      return request<T>(endpoint, options, retries - 1);
+    }
     if (err.name === 'TypeError' && err.message?.toLowerCase().includes('fetch')) {
       throw new Error('Connection lost: Unable to reach the queue server. Please check your network or backend service.');
     }

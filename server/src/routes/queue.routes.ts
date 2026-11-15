@@ -132,7 +132,7 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise
     }
 
     // Bounded queries utilizing index [queueId, status] and [queueId, position]
-    const [waitingTokens, inServiceTokens, completedTokens, cancelledTokens, completedCount, cancelledCount] =
+    const [waitingTokens, inServiceTokens, completedTokens, cancelledTokens] =
       await Promise.all([
         prisma.token.findMany({
           where: { queueId, status: 'WAITING' },
@@ -151,14 +151,18 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise
           where: { queueId, status: 'CANCELLED' },
           orderBy: { cancelledAt: 'desc' },
           take: 10
-        }),
-        prisma.token.count({
-          where: { queueId, status: 'COMPLETED' }
-        }),
-        prisma.token.count({
-          where: { queueId, status: 'CANCELLED' }
         })
       ]);
+
+    // Efficient single-query aggregation for status counts
+    const statusCounts = await prisma.token.groupBy({
+      by: ['status'],
+      where: { queueId, status: { in: ['COMPLETED', 'CANCELLED'] } },
+      _count: { _all: true }
+    });
+
+    const completedCount = statusCounts.find((s) => s.status === 'COMPLETED')?._count._all ?? completedTokens.length;
+    const cancelledCount = statusCounts.find((s) => s.status === 'CANCELLED')?._count._all ?? cancelledTokens.length;
 
     const totalCount = waitingTokens.length + inServiceTokens.length + completedCount + cancelledCount;
 
