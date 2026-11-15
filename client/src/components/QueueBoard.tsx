@@ -84,8 +84,15 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
     }
   };
 
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 10000);
+    return () => clearInterval(timer);
+  }, []);
+
   const formatWaitTime = (createdAt: string) => {
-    const diffMs = Date.now() - new Date(createdAt).getTime();
+    const diffMs = currentTime - new Date(createdAt).getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m wait`;
@@ -96,7 +103,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
 
   const formatDuration = (start: string | null | undefined, end: string | null | undefined) => {
     if (!start) return '-';
-    const endTime = end ? new Date(end).getTime() : Date.now();
+    const endTime = end ? new Date(end).getTime() : currentTime;
     const diffMs = endTime - new Date(start).getTime();
     const mins = Math.max(0, Math.floor(diffMs / (1000 * 60)));
     return `${mins}m`;

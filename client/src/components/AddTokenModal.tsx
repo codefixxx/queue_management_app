@@ -21,7 +21,7 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
   selectedQueueId,
   onTokenAdded
 }) => {
-  const [queueId, setQueueId] = useState(selectedQueueId || (queues[0]?.id ?? ''));
+  const [customQueueId, setCustomQueueId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [priority, setPriority] = useState<'NORMAL' | 'VIP'>('NORMAL');
@@ -29,18 +29,14 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (isOpen) {
-      setError(null);
-      if (selectedQueueId) {
-        setQueueId(selectedQueueId);
-      } else if (queues.length > 0 && !queueId) {
-        setQueueId(queues[0].id);
-      }
-    }
-  }, [isOpen, selectedQueueId, queues, queueId]);
-
+  const queueId = customQueueId || selectedQueueId || (queues[0]?.id ?? '');
   const activeQueue = queues.find((q) => q.id === queueId) || queues[0];
+
+  const handleClose = () => {
+    setError(null);
+    setCustomQueueId(null);
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +72,7 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Add Person to Queue"
       description="Issue a new numbered token ticket for customer service."
     >
@@ -125,7 +121,7 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
             <label className="block text-xs font-semibold text-foreground mb-1">Target Queue</label>
             <select
               value={queueId}
-              onChange={(e) => setQueueId(e.target.value)}
+              onChange={(e) => setCustomQueueId(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-input rounded-[var(--radius)] bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
             >
               {queues.map((q) => (
@@ -206,7 +202,7 @@ export const AddTokenModal: React.FC<AddTokenModalProps> = ({
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2 border-t border-border">
-          <Button type="button" variant="outline" size="md" onClick={onClose} className="w-full sm:w-auto">
+          <Button type="button" variant="outline" size="md" onClick={handleClose} className="w-full sm:w-auto">
             Cancel
           </Button>
           <Button type="submit" variant="primary" size="md" loading={loading} className="w-full sm:w-auto shadow-sm">

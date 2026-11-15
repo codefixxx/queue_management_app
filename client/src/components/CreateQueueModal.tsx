@@ -21,11 +21,10 @@ export const CreateQueueModal: React.FC<CreateQueueModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (isOpen) {
-      setError(null);
-    }
-  }, [isOpen]);
+  const handleClose = () => {
+    setError(null);
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +54,7 @@ export const CreateQueueModal: React.FC<CreateQueueModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Create New Queue"
       description="Setup a service counter or line with custom prefix and name."
     >
@@ -111,7 +110,7 @@ export const CreateQueueModal: React.FC<CreateQueueModalProps> = ({
         </div>
 
         <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2 border-t border-border">
-          <Button type="button" variant="outline" size="md" onClick={onClose} className="w-full sm:w-auto">
+          <Button type="button" variant="outline" size="md" onClick={handleClose} className="w-full sm:w-auto">
             Cancel
           </Button>
           <Button type="submit" variant="primary" size="md" loading={loading} className="w-full sm:w-auto shadow-sm">

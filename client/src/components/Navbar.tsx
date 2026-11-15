@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { User, QueueSummary } from '../types';
 import { Button } from './ui/Button';
 import {
@@ -37,12 +37,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth
 }) => {
   const [soundOn, setSoundOn] = useState(sound.enabled);
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    setIsDark(isDarkMode);
-  }, []);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
 
   const toggleDarkMode = () => {
     const nextDark = !isDark;

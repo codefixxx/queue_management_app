@@ -20,7 +20,7 @@ export const PublicDisplayModal: React.FC<PublicDisplayProps> = ({
   onClose
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
+  const [currentTime, setCurrentTime] = useState(() => new Date().toLocaleTimeString());
 
   useEffect(() => {
     const timer = setInterval(() => {

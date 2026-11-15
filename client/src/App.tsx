@@ -123,6 +123,19 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleServeNext = useCallback(async (queueId: string) => {
+    try {
+      const res = await api.serveNext(queueId);
+      sound.playChime();
+      addToast(res.message, 'success');
+      loadQueues(queueId);
+      loadAnalytics(queueId);
+    } catch (err: any) {
+      sound.playError();
+      addToast(err.message || 'Failed to serve next token', 'error');
+    }
+  }, [loadQueues, loadAnalytics]);
+
   // Keyboard Shortcuts: Space to Serve Next, 'n' to Add Token
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -152,7 +165,7 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, activeQueueId, user, isAuthOpen, isCreateQueueOpen, isAddTokenOpen, cancelTargetToken, successToken]);
+  }, [activeTab, activeQueueId, user, isAuthOpen, isCreateQueueOpen, isAddTokenOpen, cancelTargetToken, successToken, handleServeNext]);
 
   // Actions
   const handleSelectQueue = (id: string) => {
@@ -164,19 +177,6 @@ export function App() {
     setActiveTab(tab);
     if (tab === 'analytics') {
       loadAnalytics();
-    }
-  };
-
-  const handleServeNext = async (queueId: string) => {
-    try {
-      const res = await api.serveNext(queueId);
-      sound.playChime();
-      addToast(res.message, 'success');
-      loadQueues(queueId);
-      loadAnalytics(queueId);
-    } catch (err: any) {
-      sound.playError();
-      addToast(err.message || 'Failed to serve next token', 'error');
     }
   };
 
@@ -255,7 +255,7 @@ export function App() {
       addToast(`Manager: ${res.user.name}`, 'success');
       await loadQueues();
       await loadAnalytics();
-    } catch (err: any) {
+    } catch {
       setIsAuthOpen(true);
     } finally {
       setLoading(false);

@@ -19,11 +19,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (isOpen) {
-      setError(null);
-    }
-  }, [isOpen]);
+  const handleClose = () => {
+    setError(null);
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +68,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title={mode === 'login' ? 'Queue Manager Sign In' : 'Create Manager Account'}
       description="Access your queues, re-order tokens, and view live analytics."
     >
