@@ -4,7 +4,7 @@ import { QueueDetails, QueueSummary, Token } from '../types';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
-import { QueueBoardSkeleton } from './ui/Skeleton';
+import { QueueBoardSkeleton, TokenListSkeleton } from './ui/Skeleton';
 import {
   ChevronUp,
   ChevronDown,
@@ -109,7 +109,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
     return `${mins}m`;
   };
 
-  if ((loading && (queues.length === 0 || !queueDetails)) || (loading && !isQueueDetailsCurrent)) {
+  if (loading && queues.length === 0) {
     return <QueueBoardSkeleton />;
   }
 
@@ -209,11 +209,11 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
               <h1 className="text-lg sm:text-xl font-serif font-bold text-foreground tracking-tight truncate">{activeQueue?.name}</h1>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground mt-1">
-              <span>{waitingTokens.length} waiting</span>
+              <span>{isQueueDetailsCurrent ? waitingTokens.length : (activeQueue?.counts.waiting ?? 0)} waiting</span>
               <span>•</span>
-              <span>{inServiceTokens.length} at counter</span>
+              <span>{isQueueDetailsCurrent ? inServiceTokens.length : (activeQueue?.counts.inService ?? 0)} at counter</span>
               <span>•</span>
-              <span>{queueDetails?.counts.completed || 0} served</span>
+              <span>{isQueueDetailsCurrent ? (queueDetails?.counts.completed || 0) : (activeQueue?.counts.completed ?? 0)} served</span>
             </div>
           </div>
 
@@ -232,12 +232,12 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
             <Button
               variant="primary"
               size="md"
-              disabled={waitingTokens.length === 0}
-              loading={actionLoading === 'serve-next'}
+              disabled={!isQueueDetailsCurrent || waitingTokens.length === 0}
+              loading={actionLoading === 'serve-next' || (loading && !isQueueDetailsCurrent)}
               onClick={handleServe}
               className="h-10 sm:h-9 text-xs px-3 sm:px-4 font-semibold shadow-sm flex-1 md:flex-none justify-center"
             >
-              {topToken ? (
+              {isQueueDetailsCurrent && topToken ? (
                 <>
                   <CornerDownRight className="w-3.5 h-3.5 mr-1 shrink-0" />
                   <span>Call {topToken.tokenNumber}</span>
@@ -245,6 +245,8 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
                     ({topToken.customerName})
                   </span>
                 </>
+              ) : !isQueueDetailsCurrent && loading ? (
+                <span>Loading queue...</span>
               ) : (
                 <span>Line is clear</span>
               )}
@@ -253,8 +255,13 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
         </div>
       </div>
 
-      {/* Active Service Counter */}
-      {inServiceTokens.length > 0 && (
+      {/* Active Service Counter & Waiting List with Content-Only Skeleton during Queue Switch */}
+      {loading && !isQueueDetailsCurrent ? (
+        <TokenListSkeleton count={Math.min(Math.max(activeQueue?.counts?.waiting || 3, 2), 5)} />
+      ) : (
+        <>
+          {/* Active Service Counter */}
+          {inServiceTokens.length > 0 && (
         <div className="bg-card text-card-foreground rounded-[var(--radius)] p-3.5 sm:p-4 shadow-sm border-2 border-primary/40">
           <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
@@ -507,6 +514,8 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
             </CardContent>
           </Card>
         </div>
+      )}
+        </>
       )}
     </div>
   );

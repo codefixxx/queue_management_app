@@ -10,6 +10,42 @@ export const Skeleton: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ class
   );
 };
 
+export const TokenListSkeleton: React.FC<{ count?: number }> = ({ count = 4 }) => {
+  return (
+    <div className="rounded-[var(--radius)] border border-border bg-card overflow-hidden shadow-sm animate-in fade-in duration-150">
+      <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 border-b border-border flex items-center justify-between">
+        <Skeleton className="h-4 w-24 rounded" />
+        <Skeleton className="h-3 w-16 rounded" />
+      </div>
+      <div className="p-3 sm:p-4 space-y-2.5 sm:space-y-3">
+        {Array.from({ length: count }).map((_, idx) => (
+          <div
+            key={idx}
+            className="p-3 border border-border rounded-md bg-card space-y-2"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Skeleton className="h-6 w-6 rounded shrink-0" />
+                <Skeleton className="h-6 w-16 sm:w-20 rounded font-mono shrink-0" />
+                <Skeleton className="h-4 w-24 sm:w-36 rounded" />
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Skeleton className="h-7.5 w-7.5 rounded" />
+                <Skeleton className="h-7.5 w-7.5 rounded" />
+                <Skeleton className="h-7.5 w-7.5 rounded" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <Skeleton className="h-3 w-20 rounded" />
+              <Skeleton className="h-3 w-16 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const QueueBoardSkeleton: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 space-y-4 sm:space-y-5 animate-in fade-in duration-150">
@@ -45,37 +81,7 @@ export const QueueBoardSkeleton: React.FC = () => {
       </div>
 
       {/* Main Waiting Line Card Skeleton */}
-      <div className="rounded-[var(--radius)] border border-border bg-card overflow-hidden shadow-sm">
-        <div className="py-2.5 sm:py-3 px-3.5 sm:px-4 border-b border-border flex items-center justify-between">
-          <Skeleton className="h-4 w-24 rounded" />
-          <Skeleton className="h-3 w-16 rounded" />
-        </div>
-        <div className="p-3 sm:p-4 space-y-2.5 sm:space-y-3">
-          {[1, 2, 3, 4, 5].map((idx) => (
-            <div
-              key={idx}
-              className="p-3 border border-border rounded-md bg-card space-y-2"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <Skeleton className="h-6 w-6 rounded shrink-0" />
-                  <Skeleton className="h-6 w-16 sm:w-20 rounded font-mono shrink-0" />
-                  <Skeleton className="h-4 w-24 sm:w-36 rounded" />
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Skeleton className="h-7.5 w-7.5 rounded" />
-                  <Skeleton className="h-7.5 w-7.5 rounded" />
-                  <Skeleton className="h-7.5 w-7.5 rounded" />
-                </div>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Skeleton className="h-3 w-20 rounded" />
-                <Skeleton className="h-3 w-16 rounded" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <TokenListSkeleton count={5} />
     </div>
   );
 };
