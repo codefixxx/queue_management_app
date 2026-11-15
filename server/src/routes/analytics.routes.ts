@@ -15,11 +15,23 @@ router.get('/', requireAuth, async (req: AuthRequest, res: Response): Promise<vo
       ? { id: cleanQueueId, managerId }
       : { managerId };
 
-    // Fetch user queues with minimal telemetry fields (avoids loading customer PII and notes into heap)
+    const timeRange = (req.query.range as string) || 'all';
+    let startDate: Date | undefined;
+    const now = new Date();
+    if (timeRange === 'today') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (timeRange === '7d') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (timeRange === '30d') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Fetch user queues with minimal telemetry fields scoped to time window
     const queues = await prisma.queue.findMany({
       where: queueFilter,
       include: {
         tokens: {
+          where: startDate ? { createdAt: { gte: startDate } } : undefined,
           select: {
             id: true,
             status: true,

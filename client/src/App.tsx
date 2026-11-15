@@ -130,13 +130,16 @@ export function App() {
       const res = await api.serveNext(queueId);
       sound.playChime();
       addToast(res.message, 'success');
-      loadQueues(queueId);
-      loadAnalytics(queueId);
+      loadQueueDetails(queueId);
+      setQueues((prev) => prev.map((q) => q.id === queueId ? {
+        ...q,
+        counts: { ...q.counts, waiting: Math.max(0, q.counts.waiting - 1), inService: q.counts.inService + 1 }
+      } : q));
     } catch (err: any) {
       sound.playError();
       addToast(err.message || 'Failed to serve next token', 'error');
     }
-  }, [loadQueues, loadAnalytics]);
+  }, [loadQueueDetails]);
 
   // Keyboard Shortcuts: Space to Serve Next, 'n' to Add Token
   useEffect(() => {
@@ -190,7 +193,14 @@ export function App() {
       const res = await api.moveTokenUp(tokenId);
       sound.playTick();
       addToast(res.message, 'info');
-      if (activeQueueId) loadQueueDetails(activeQueueId);
+      if (res.tokens && activeQueueId) {
+        setQueueDetails((prev) => (prev ? { ...prev, waitingTokens: res.tokens } : prev));
+        setQueueCache((prev) =>
+          prev[activeQueueId] ? { ...prev, [activeQueueId]: { ...prev[activeQueueId], waitingTokens: res.tokens } } : prev
+        );
+      } else if (activeQueueId) {
+        loadQueueDetails(activeQueueId);
+      }
     } catch (err: any) {
       sound.playError();
       addToast(err.message || 'Failed to move token', 'error');
@@ -202,7 +212,14 @@ export function App() {
       const res = await api.moveTokenDown(tokenId);
       sound.playTick();
       addToast(res.message, 'info');
-      if (activeQueueId) loadQueueDetails(activeQueueId);
+      if (res.tokens && activeQueueId) {
+        setQueueDetails((prev) => (prev ? { ...prev, waitingTokens: res.tokens } : prev));
+        setQueueCache((prev) =>
+          prev[activeQueueId] ? { ...prev, [activeQueueId]: { ...prev[activeQueueId], waitingTokens: res.tokens } } : prev
+        );
+      } else if (activeQueueId) {
+        loadQueueDetails(activeQueueId);
+      }
     } catch (err: any) {
       sound.playError();
       addToast(err.message || 'Failed to move token', 'error');
@@ -215,8 +232,23 @@ export function App() {
       const res = await api.cancelToken(cancelTargetToken.id, reason);
       addToast(res.message, 'info');
       setCancelTargetToken(null);
-      loadQueues(activeQueueId || undefined);
-      loadAnalytics(activeQueueId || undefined);
+      if (activeQueueId) {
+        loadQueueDetails(activeQueueId);
+        setQueues((prev) =>
+          prev.map((q) =>
+            q.id === activeQueueId
+              ? {
+                  ...q,
+                  counts: {
+                    ...q.counts,
+                    waiting: Math.max(0, q.counts.waiting - 1),
+                    cancelled: q.counts.cancelled + 1
+                  }
+                }
+              : q
+          )
+        );
+      }
     } catch (err: any) {
       sound.playError();
       addToast(err.message || 'Failed to cancel token', 'error');
@@ -228,8 +260,23 @@ export function App() {
       const res = await api.completeToken(tokenId);
       sound.playChime();
       addToast(res.message, 'success');
-      loadQueues(activeQueueId || undefined);
-      loadAnalytics(activeQueueId || undefined);
+      if (activeQueueId) {
+        loadQueueDetails(activeQueueId);
+        setQueues((prev) =>
+          prev.map((q) =>
+            q.id === activeQueueId
+              ? {
+                  ...q,
+                  counts: {
+                    ...q.counts,
+                    inService: Math.max(0, q.counts.inService - 1),
+                    completed: q.counts.completed + 1
+                  }
+                }
+              : q
+          )
+        );
+      }
     } catch (err: any) {
       sound.playError();
       addToast(err.message || 'Failed to complete token', 'error');
@@ -433,8 +480,21 @@ export function App() {
         onTokenAdded={(token) => {
           sound.playTick();
           setSuccessToken(token);
-          loadQueues(token.queueId);
-          loadAnalytics(token.queueId);
+          loadQueueDetails(token.queueId);
+          setQueues((prev) =>
+            prev.map((q) =>
+              q.id === token.queueId
+                ? {
+                    ...q,
+                    counts: {
+                      ...q.counts,
+                      waiting: q.counts.waiting + 1,
+                      total: q.counts.total + 1
+                    }
+                  }
+                : q
+            )
+          );
         }}
       />
 

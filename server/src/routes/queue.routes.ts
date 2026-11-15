@@ -33,29 +33,35 @@ function getCleanParam(param: string | string[] | undefined): string {
   return typeof param === 'string' ? param.trim() : '';
 }
 
-// List all queues for the manager
+// List all queues for the manager (Optimized: single groupBy for counts instead of full token scanning)
 router.get('/', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const queues = await prisma.queue.findMany({
-      where: { managerId: req.user!.id },
-      include: {
-        tokens: {
-          select: {
-            id: true,
-            status: true,
-            createdAt: true,
-            servedAt: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    const [queues, tokenCounts] = await Promise.all([
+      prisma.queue.findMany({
+        where: { managerId: req.user!.id },
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.token.groupBy({
+        by: ['queueId', 'status'],
+        where: { queue: { managerId: req.user!.id } },
+        _count: { _all: true }
+      })
+    ]);
+
+    const countMap: Record<string, Record<string, number>> = {};
+    for (const item of tokenCounts) {
+      if (!countMap[item.queueId]) {
+        countMap[item.queueId] = {};
+      }
+      countMap[item.queueId][item.status] = item._count._all;
+    }
 
     const enriched = queues.map((q) => {
-      const waitingCount = q.tokens.filter((t) => t.status === 'WAITING').length;
-      const inServiceCount = q.tokens.filter((t) => t.status === 'IN_SERVICE').length;
-      const completedCount = q.tokens.filter((t) => t.status === 'COMPLETED').length;
-      const cancelledCount = q.tokens.filter((t) => t.status === 'CANCELLED').length;
+      const qCounts = countMap[q.id] || {};
+      const waiting = qCounts['WAITING'] || 0;
+      const inService = qCounts['IN_SERVICE'] || 0;
+      const completed = qCounts['COMPLETED'] || 0;
+      const cancelled = qCounts['CANCELLED'] || 0;
 
       return {
         id: q.id,
@@ -66,11 +72,11 @@ router.get('/', requireAuth, async (req: AuthRequest, res: Response): Promise<vo
         createdAt: q.createdAt,
         updatedAt: q.updatedAt,
         counts: {
-          waiting: waitingCount,
-          inService: inServiceCount,
-          completed: completedCount,
-          cancelled: cancelledCount,
-          total: q.tokens.length
+          waiting,
+          inService,
+          completed,
+          cancelled,
+          total: waiting + inService + completed + cancelled
         }
       };
     });
@@ -122,63 +128,71 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    const queue = await prisma.queue.findFirst({
-      where: { id: queueId, managerId: req.user!.id }
-    });
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
+    const skip = (page - 1) * limit;
 
-    if (!queue) {
+    // Consolidated concurrent execution: fetches queue with active tokens, paginated history, and status counts in 1 parallel batch
+    const [queueWithActive, completedTokens, cancelledTokens, statusCounts] = await Promise.all([
+      prisma.queue.findFirst({
+        where: { id: queueId, managerId: req.user!.id },
+        include: {
+          tokens: {
+            where: { status: { in: ['WAITING', 'IN_SERVICE'] } },
+            orderBy: [{ position: 'asc' }, { createdAt: 'asc' }]
+          }
+        }
+      }),
+      prisma.token.findMany({
+        where: { queueId, status: 'COMPLETED' },
+        orderBy: { completedAt: 'desc' },
+        take: limit,
+        skip
+      }),
+      prisma.token.findMany({
+        where: { queueId, status: 'CANCELLED' },
+        orderBy: { cancelledAt: 'desc' },
+        take: limit,
+        skip
+      }),
+      prisma.token.groupBy({
+        by: ['status'],
+        where: { queueId },
+        _count: { _all: true }
+      })
+    ]);
+
+    if (!queueWithActive) {
       res.status(404).json({ error: 'Queue not found' });
       return;
     }
 
-    // Bounded queries utilizing index [queueId, status] and [queueId, position]
-    const [waitingTokens, inServiceTokens, completedTokens, cancelledTokens] =
-      await Promise.all([
-        prisma.token.findMany({
-          where: { queueId, status: 'WAITING' },
-          orderBy: [{ position: 'asc' }, { createdAt: 'asc' }]
-        }),
-        prisma.token.findMany({
-          where: { queueId, status: 'IN_SERVICE' },
-          orderBy: { servedAt: 'desc' }
-        }),
-        prisma.token.findMany({
-          where: { queueId, status: 'COMPLETED' },
-          orderBy: { completedAt: 'desc' },
-          take: 10
-        }),
-        prisma.token.findMany({
-          where: { queueId, status: 'CANCELLED' },
-          orderBy: { cancelledAt: 'desc' },
-          take: 10
-        })
-      ]);
-
-    // Efficient single-query aggregation for status counts
-    const statusCounts = await prisma.token.groupBy({
-      by: ['status'],
-      where: { queueId, status: { in: ['COMPLETED', 'CANCELLED'] } },
-      _count: { _all: true }
-    });
+    const waitingTokens = queueWithActive.tokens.filter((t) => t.status === 'WAITING');
+    const inServiceTokens = queueWithActive.tokens.filter((t) => t.status === 'IN_SERVICE');
 
     const completedCount = statusCounts.find((s) => s.status === 'COMPLETED')?._count._all ?? completedTokens.length;
     const cancelledCount = statusCounts.find((s) => s.status === 'CANCELLED')?._count._all ?? cancelledTokens.length;
-
     const totalCount = waitingTokens.length + inServiceTokens.length + completedCount + cancelledCount;
 
     res.json({
       queue: {
-        id: queue.id,
-        name: queue.name,
-        description: queue.description,
-        prefix: queue.prefix,
-        currentNumber: queue.currentNumber,
-        createdAt: queue.createdAt,
-        updatedAt: queue.updatedAt,
+        id: queueWithActive.id,
+        name: queueWithActive.name,
+        description: queueWithActive.description,
+        prefix: queueWithActive.prefix,
+        currentNumber: queueWithActive.currentNumber,
+        createdAt: queueWithActive.createdAt,
+        updatedAt: queueWithActive.updatedAt,
         waitingTokens,
         inServiceTokens,
         recentCompleted: completedTokens,
         recentCancelled: cancelledTokens,
+        pagination: {
+          page,
+          limit,
+          completedTotal: completedCount,
+          cancelledTotal: cancelledCount
+        },
         counts: {
           waiting: waitingTokens.length,
           inService: inServiceTokens.length,

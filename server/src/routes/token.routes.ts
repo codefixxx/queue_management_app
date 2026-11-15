@@ -68,24 +68,23 @@ router.post('/queues/:queueId/tokens', requireAuth, tokenCreationLimiter, async 
     }
 
     const createdToken = await prisma.$transaction(async (tx) => {
-      // 1. Increment queue counter
-      const updatedQueue = await tx.queue.update({
-        where: { id: queueId },
-        data: { currentNumber: { increment: 1 } }
-      });
+      // 1. Parallel execution inside transaction: increment counter & count waiting in 1 round-trip
+      const [updatedQueue, waitingCount] = await Promise.all([
+        tx.queue.update({
+          where: { id: queueId },
+          data: { currentNumber: { increment: 1 } }
+        }),
+        tx.token.count({
+          where: { queueId, status: 'WAITING' }
+        })
+      ]);
 
       const nextNum = updatedQueue.currentNumber;
       const formattedSeq = String(nextNum).padStart(3, '0');
       const tokenNumber = `${queue.prefix}-${formattedSeq}`;
-
-      // 2. Count existing waiting tokens to assign next position
-      const waitingCount = await tx.token.count({
-        where: { queueId, status: 'WAITING' }
-      });
-
       const newPosition = waitingCount + 1;
 
-      // 3. Create the token
+      // 2. Create the token
       return await tx.token.create({
         data: {
           tokenNumber,
@@ -141,10 +140,22 @@ router.post('/tokens/:id/move-up', requireAuth, async (req: AuthRequest, res: Re
     }
 
     const { updatedTokens, targetPos, tokenNumber } = await prisma.$transaction(async (tx) => {
-      // Re-read inside transaction to avoid stale position
-      const liveToken = await tx.token.findUnique({
-        where: { id: tokenId }
-      });
+      // Parallel read inside transaction: fetch live token and adjacent token concurrently
+      const currentPos = token.position;
+      const target = currentPos - 1;
+
+      const [liveToken, adjacentToken] = await Promise.all([
+        tx.token.findUnique({
+          where: { id: tokenId }
+        }),
+        tx.token.findFirst({
+          where: {
+            queueId: token.queueId,
+            status: 'WAITING',
+            position: target
+          }
+        })
+      ]);
 
       if (!liveToken || liveToken.status !== 'WAITING') {
         throw new Error('TOKEN_STATE_INVALID');
@@ -154,37 +165,22 @@ router.post('/tokens/:id/move-up', requireAuth, async (req: AuthRequest, res: Re
         throw new Error('ALREADY_AT_TOP');
       }
 
-      const currentPos = liveToken.position;
-      const target = currentPos - 1;
-
-      // Find token currently occupying target position
-      const adjacentToken = await tx.token.findFirst({
-        where: {
-          queueId: liveToken.queueId,
-          status: 'WAITING',
-          position: target
-        }
-      });
-
-      if (!adjacentToken) {
+      // If adjacent token exists, swap positions atomically in a single SQL operation
+      if (adjacentToken) {
+        await tx.$executeRaw`
+          UPDATE "Token"
+          SET position = CASE 
+            WHEN id = ${liveToken.id} THEN ${target}
+            WHEN id = ${adjacentToken.id} THEN ${currentPos}
+          END
+          WHERE id IN (${liveToken.id}, ${adjacentToken.id})
+        `;
+      } else {
         await tx.token.update({
           where: { id: liveToken.id },
           data: { position: target }
         });
         await normalizeWaitingPositions(tx, liveToken.queueId);
-      } else {
-        await tx.token.update({
-          where: { id: liveToken.id },
-          data: { position: -1 }
-        });
-        await tx.token.update({
-          where: { id: adjacentToken.id },
-          data: { position: currentPos }
-        });
-        await tx.token.update({
-          where: { id: liveToken.id },
-          data: { position: target }
-        });
       }
 
       const list = await tx.token.findMany({
@@ -238,53 +234,50 @@ router.post('/tokens/:id/move-down', requireAuth, async (req: AuthRequest, res: 
     }
 
     const { updatedTokens, targetPos, tokenNumber } = await prisma.$transaction(async (tx) => {
-      // Re-read inside transaction
-      const liveToken = await tx.token.findUnique({
-        where: { id: tokenId }
-      });
+      // Parallel read inside transaction: fetch live token, total waiting count, and adjacent token concurrently
+      const currentPos = token.position;
+      const target = currentPos + 1;
+
+      const [liveToken, totalWaiting, adjacentToken] = await Promise.all([
+        tx.token.findUnique({
+          where: { id: tokenId }
+        }),
+        tx.token.count({
+          where: { queueId: token.queueId, status: 'WAITING' }
+        }),
+        tx.token.findFirst({
+          where: {
+            queueId: token.queueId,
+            status: 'WAITING',
+            position: target
+          }
+        })
+      ]);
 
       if (!liveToken || liveToken.status !== 'WAITING') {
         throw new Error('TOKEN_STATE_INVALID');
       }
 
-      const totalWaiting = await tx.token.count({
-        where: { queueId: liveToken.queueId, status: 'WAITING' }
-      });
-
       if (liveToken.position >= totalWaiting) {
         throw new Error('ALREADY_AT_BOTTOM');
       }
 
-      const currentPos = liveToken.position;
-      const target = currentPos + 1;
-
-      const adjacentToken = await tx.token.findFirst({
-        where: {
-          queueId: liveToken.queueId,
-          status: 'WAITING',
-          position: target
-        }
-      });
-
-      if (!adjacentToken) {
+      // If adjacent token exists, swap positions atomically in a single SQL operation
+      if (adjacentToken) {
+        await tx.$executeRaw`
+          UPDATE "Token"
+          SET position = CASE 
+            WHEN id = ${liveToken.id} THEN ${target}
+            WHEN id = ${adjacentToken.id} THEN ${currentPos}
+          END
+          WHERE id IN (${liveToken.id}, ${adjacentToken.id})
+        `;
+      } else {
         await tx.token.update({
           where: { id: liveToken.id },
           data: { position: target }
         });
         await normalizeWaitingPositions(tx, liveToken.queueId);
-      } else {
-        await tx.token.update({
-          where: { id: liveToken.id },
-          data: { position: -1 }
-        });
-        await tx.token.update({
-          where: { id: adjacentToken.id },
-          data: { position: currentPos }
-        });
-        await tx.token.update({
-          where: { id: liveToken.id },
-          data: { position: target }
-        });
       }
 
       const list = await tx.token.findMany({
