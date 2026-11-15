@@ -15,11 +15,26 @@ import { Button } from './components/ui/Button';
 import { sound } from './utils/sound';
 import { ArrowRight, Layers, Clock, Zap, AlertCircle, RefreshCw } from 'lucide-react';
 
+function getInitialSearchParams() {
+  if (typeof window === 'undefined') return { tab: 'queue' as const, queueId: null, page: 1, range: 'today' };
+  const params = new URLSearchParams(window.location.search);
+  const rawTab = params.get('tab');
+  const tab: 'queue' | 'analytics' | 'display' = rawTab === 'analytics' || rawTab === 'display' ? rawTab : 'queue';
+  const queueId = params.get('queueId') || null;
+  const page = Math.max(1, parseInt(params.get('page') || '1') || 1);
+  const rawRange = params.get('range');
+  const range = rawRange === '7d' || rawRange === '30d' || rawRange === 'all' ? rawRange : 'today';
+  return { tab, queueId, page, range };
+}
+
 export function App() {
+  const initialParams = useRef(getInitialSearchParams()).current;
   const [user, setUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'queue' | 'analytics' | 'display'>('queue');
+  const [activeTab, setActiveTab] = useState<'queue' | 'analytics' | 'display'>(initialParams.tab);
   const [queues, setQueues] = useState<QueueSummary[]>([]);
-  const [activeQueueId, setActiveQueueId] = useState<string | null>(null);
+  const [activeQueueId, setActiveQueueId] = useState<string | null>(initialParams.queueId);
+  const [historyPage, setHistoryPage] = useState<number>(initialParams.page);
+  const [analyticsRange, setAnalyticsRange] = useState<string>(initialParams.range);
   const [queueDetails, setQueueDetails] = useState<QueueDetails | null>(null);
   const [queueCache, setQueueCache] = useState<Record<string, QueueDetails>>({});
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -48,11 +63,24 @@ export function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // Load Queue Details
-  const loadQueueDetails = useCallback(async (id: string) => {
+  const updateUrl = useCallback((updates: Record<string, string | number | null | undefined>) => {
+    const params = new URLSearchParams(window.location.search);
+    for (const [key, val] of Object.entries(updates)) {
+      if (val === null || val === undefined || val === '' || (key === 'page' && Number(val) === 1) || (key === 'range' && val === 'today')) {
+        params.delete(key);
+      } else {
+        params.set(key, String(val));
+      }
+    }
+    const query = params.toString() ? `?${params.toString()}` : window.location.pathname;
+    window.history.replaceState(null, '', query);
+  }, []);
+
+  // Load Queue Details with Page
+  const loadQueueDetails = useCallback(async (id: string, page = 1) => {
     try {
       setLoading(true);
-      const res = await api.getQueueDetails(id);
+      const res = await api.getQueueDetails(id, page);
       setQueueDetails(res.queue);
       setQueueCache((prev) => ({ ...prev, [id]: res.queue }));
       setNetworkError(null);
@@ -64,15 +92,15 @@ export function App() {
     }
   }, []);
 
-  // Load Analytics
-  const loadAnalytics = useCallback(async (qId?: string) => {
+  // Load Analytics with Range
+  const loadAnalytics = useCallback(async (qId?: string, range = analyticsRange) => {
     try {
-      const data = await api.getAnalytics(qId);
+      const data = await api.getAnalytics(qId, range);
       setAnalytics(data);
     } catch (err: any) {
       console.error('Failed to load analytics:', err);
     }
-  }, []);
+  }, [analyticsRange]);
 
   // Load All Queues
   const loadQueues = useCallback(async (preferQueueId?: string) => {
@@ -84,12 +112,15 @@ export function App() {
 
       if (res.queues.length > 0) {
         const currentId = activeQueueIdRef.current;
-        const nextId = preferQueueId && res.queues.some((q) => q.id === preferQueueId)
-          ? preferQueueId
-          : (currentId && res.queues.some((q) => q.id === currentId) ? currentId : res.queues[0].id);
+        const nextId = initialParams.queueId && res.queues.some((q) => q.id === initialParams.queueId)
+          ? initialParams.queueId
+          : (preferQueueId && res.queues.some((q) => q.id === preferQueueId)
+            ? preferQueueId
+            : (currentId && res.queues.some((q) => q.id === currentId) ? currentId : res.queues[0].id));
 
         setActiveQueueId(nextId);
-        await loadQueueDetails(nextId);
+        updateUrl({ tab: activeTab, queueId: nextId, page: historyPage, range: analyticsRange });
+        await loadQueueDetails(nextId, historyPage);
       } else {
         setActiveQueueId(null);
         setQueueDetails(null);
@@ -100,6 +131,22 @@ export function App() {
     } finally {
       setLoading(false);
     }
+  }, [loadQueueDetails, activeTab, historyPage, analyticsRange, initialParams.queueId, updateUrl]);
+
+  // Handle browser back/forward or URL state changes
+  useEffect(() => {
+    const handlePopState = () => {
+      const current = getInitialSearchParams();
+      setActiveTab(current.tab);
+      if (current.queueId) setActiveQueueId(current.queueId);
+      setHistoryPage(current.page);
+      setAnalyticsRange(current.range);
+      if (current.queueId) {
+        loadQueueDetails(current.queueId, current.page);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [loadQueueDetails]);
 
   // Auth bootstrap on initial load
@@ -175,17 +222,35 @@ export function App() {
   // Actions
   const handleSelectQueue = (id: string) => {
     setActiveQueueId(id);
+    setHistoryPage(1);
+    updateUrl({ tab: 'queue', queueId: id, page: 1 });
     if (queueCache[id]) {
       setQueueDetails(queueCache[id]);
     }
-    loadQueueDetails(id);
+    loadQueueDetails(id, 1);
+  };
+
+  const handleHistoryPageChange = (newPage: number) => {
+    setHistoryPage(newPage);
+    if (activeQueueId) {
+      updateUrl({ tab: 'queue', queueId: activeQueueId, page: newPage });
+      loadQueueDetails(activeQueueId, newPage);
+    }
   };
 
   const handleTabChange = (tab: 'queue' | 'analytics' | 'display') => {
     setActiveTab(tab);
+    updateUrl({ tab, queueId: tab === 'queue' ? activeQueueId : undefined });
     if (tab === 'analytics') {
-      loadAnalytics();
+      loadAnalytics(activeQueueId || undefined, analyticsRange);
     }
+  };
+
+  const handleAnalyticsRefresh = (qId?: string, range?: string) => {
+    const nextRange = range || analyticsRange;
+    if (range) setAnalyticsRange(range);
+    updateUrl({ tab: 'analytics', queueId: qId, range: nextRange });
+    loadAnalytics(qId, nextRange);
   };
 
   const handleMoveUp = async (tokenId: string) => {
@@ -422,6 +487,8 @@ export function App() {
             onSelectQueue={handleSelectQueue}
             queueDetails={queueDetails}
             loading={loading}
+            historyPage={historyPage}
+            onHistoryPageChange={handleHistoryPageChange}
             onServeNext={handleServeNext}
             onMoveUp={handleMoveUp}
             onMoveDown={handleMoveDown}
@@ -436,7 +503,9 @@ export function App() {
             analytics={analytics}
             queues={queues}
             loading={loading}
-            onRefresh={(qId) => loadAnalytics(qId)}
+            selectedRange={analyticsRange}
+            selectedQueueId={activeQueueId || 'all'}
+            onRefresh={handleAnalyticsRefresh}
           />
         ) : (
           <PublicDisplayModal

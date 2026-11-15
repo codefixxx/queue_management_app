@@ -97,8 +97,8 @@ export const api = {
     });
   },
 
-  async getQueueDetails(id: string): Promise<{ queue: QueueDetails }> {
-    return request<{ queue: QueueDetails }>(`/queues/${id}`);
+  async getQueueDetails(id: string, page = 1, limit = 10): Promise<{ queue: QueueDetails }> {
+    return request<{ queue: QueueDetails }>(`/queues/${id}?page=${page}&limit=${limit}`);
   },
 
   async deleteQueue(id: string): Promise<{ message: string }> {
@@ -151,9 +151,12 @@ export const api = {
     });
   },
 
-  // Analytics API (Requirement 8)
-  async getAnalytics(queueId?: string): Promise<AnalyticsData> {
-    const query = queueId ? `?queueId=${encodeURIComponent(queueId)}` : '';
+  // Analytics API (Requirement 8) with Range Query support
+  async getAnalytics(queueId?: string, range = 'today'): Promise<AnalyticsData> {
+    const params = new URLSearchParams();
+    if (queueId && queueId !== 'all') params.set('queueId', queueId);
+    if (range) params.set('range', range);
+    const query = params.toString() ? `?${params.toString()}` : '';
     return request<AnalyticsData>(`/analytics${query}`);
   }
 };

@@ -1,72 +1,62 @@
-# 🎯 QueueFlow — Full-Stack Queue Management & Analytics System
+# QueueFlow
 
-QueueFlow is a full-stack, real-time Queue Management System built with **Express.js + TypeScript** on the backend and **React + Vite + Tailwind CSS + Shadcn UI styling** on the frontend, powered by **Neon Lakebase Postgres with Prisma ORM** for cloud-native persistence and wait-time telemetry analytics.
+QueueFlow is a full-stack, real-time queue management and operational telemetry system built with Express.js, TypeScript, React, and PostgreSQL via Prisma ORM.
 
----
+## System Overview
 
-## ✨ Features Implemented
+### Queue Dispatch Terminal
+![Queue Dispatch Terminal](docs/screenshots/queue-dispatch.jpg)
 
-1. **Manager Authentication & Multi-Queue Creation**
-   - Register and Login as Queue Manager with secure JWT & bcrypt hashing.
-   - Create and manage multiple named queues (e.g., *Customer Service*, *Express Billing*) with custom ticket prefixes.
+Operator dashboard for managing active service counters and waiting lines:
+- Multi-queue tab navigation with live token counters.
+- Active counter management with direct service completion.
+- Priority-ordered waiting line with real-time positional reordering and next-in-line ticket dispatch.
 
-2. **Customer Token Generation**
-   - Add new customers/persons into queues with customizable name, phone number, priority tags (Standard / VIP), and notes.
-   - Generates numbered tokens automatically (e.g. `CS-008`, `EXP-009`) with live ticket preview.
+### Performance Metrics
+![Performance Metrics](docs/screenshots/queue-metrics.jpg)
 
-3. **Live Waiting Line Visualization**
-   - Displays real-time waiting list ordered by priority rank (`#1 Next Up`, `#2`, `#3`...).
-   - Displays wait duration timers (`Waited: 8 mins ago`).
+Operational analytics dashboard for monitoring throughput and service efficiency:
+- Core KPIs: average wait time, average service duration, active queue size, and completion rate.
+- Hourly customer flow tracking arrivals against completed services.
+- Token status distribution and wait-time duration histogram.
+- Scoped date range filtering (Today, 7D, 30D, All) and line-by-line throughput breakdowns.
 
-4. **Dynamic Queue Reordering (Move Up / Down)**
-   - Move any waiting token **Up** or **Down** in the queue with transactional position swapping and contiguous re-indexing.
+### Public Monitor Display
+![Public Monitor Display](docs/screenshots/public-monitor.png)
 
-5. **One-Click Top-of-Queue Assignment**
-   - Assign the top customer in line for service with a single button click.
-   - Automatically promotes the next waiting customer to the `#1` slot.
+Full-screen kiosk view designed for customer-facing waiting areas:
+- Prominent callout of the ticket and customer currently being served at the counter.
+- Upcoming queue roster displaying next tokens in line.
+- Text-to-speech audio chime notifications on customer calls and live synchronized clock.
 
-6. **Active Service Counter & Completion**
-   - Dedicated counter station displaying customers currently being served, live timer, and a one-click **"Complete Service"** action.
+## Tech Stack
 
-7. **Token Cancellation**
-   - Cancel any token with pre-configured reason options (*Customer left premises*, *No-show*, etc.) and automatic queue re-alignment.
+- **Backend**: Node.js, Express.js, TypeScript, Prisma ORM, PostgreSQL (Neon Lakebase), Zod, JWT, bcryptjs.
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, Recharts.
+- **State & Routing**: In-memory queue caching with URL search parameter state synchronization.
 
-8. **Telemetry & Wait-Time Analytics Dashboard**
-   - **KPI Cards**: Average Wait Time, Average Service Time, Active Waiting Count, Service Completion Rate.
-   - **Queue Flow & Arrival Trends**: Area chart visualizing hourly customer arrivals vs. customers served.
-   - **Wait-Time Distribution**: Bar chart histogram of waiting intervals.
-   - **Status Breakdown**: Donut chart tracking Waiting, In-Service, Completed, and Cancelled tokens.
-   - **Queue Comparison**: Detailed table comparing performance across counters.
+## Getting Started
 
----
+### Prerequisites
+- Node.js 18+
+- PostgreSQL database instance
 
-## 🛠️ Architecture & Tech Stack
-
-- **Backend**: Express.js, TypeScript, Prisma ORM, Neon Lakebase Postgres, Zod validation, JWT, bcryptjs.
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, Shadcn-style components, Lucide Icons, Recharts.
-- **Database**: Neon Lakebase Postgres (`production` branch, pooled connections for application traffic and direct connections for migrations).
-
----
-
-## 🚀 Running the Project
-
-Both servers are pre-configured:
-
-### Backend (Port 5000)
+### Backend Setup
 ```bash
 cd server
+npm install
 npm run dev
 ```
+Backend runs at `http://localhost:5000`.
 
-### Frontend (Port 3000)
+### Frontend Setup
 ```bash
 cd client
+npm install
 npm run dev
 ```
+Frontend runs at `http://127.0.0.1:3000`.
 
-Open your browser to: **`http://127.0.0.1:3000`**
-
-### 🔑 Demo Manager Credentials
-- **Email**: `manager@queueflow.com`
-- **Password**: `password123`
-*(Or click the **"Launch Demo Manager (1-Click)"** button on the home screen)*
+### Demo Credentials
+- **Email**: manager@queueflow.com
+- **Password**: password123

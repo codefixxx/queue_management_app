@@ -43,6 +43,13 @@ export interface Token {
   queueId: string;
 }
 
+export interface QueuePagination {
+  page: number;
+  limit: number;
+  completedTotal: number;
+  cancelledTotal: number;
+}
+
 export interface QueueDetails {
   id: string;
   name: string;
@@ -55,6 +62,7 @@ export interface QueueDetails {
   inServiceTokens: Token[];
   recentCompleted: Token[];
   recentCancelled: Token[];
+  pagination?: QueuePagination;
   counts: QueueCounts;
 }
 

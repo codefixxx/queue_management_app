@@ -25,6 +25,8 @@ interface QueueBoardProps {
   onSelectQueue: (id: string) => void;
   queueDetails: QueueDetails | null;
   loading: boolean;
+  historyPage?: number;
+  onHistoryPageChange?: (page: number) => void;
   onServeNext: (queueId: string) => Promise<void>;
   onMoveUp: (tokenId: string) => Promise<void>;
   onMoveDown: (tokenId: string) => Promise<void>;
@@ -41,6 +43,8 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
   onSelectQueue,
   queueDetails,
   loading,
+  historyPage = 1,
+  onHistoryPageChange,
   onServeNext,
   onMoveUp,
   onMoveDown,
@@ -513,6 +517,38 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
               )}
             </CardContent>
           </Card>
+
+          {/* History Pagination Bar */}
+          {queueDetails?.pagination && (
+            <div className="md:col-span-2 flex items-center justify-between px-3.5 py-2 bg-card border border-border rounded-[var(--radius)] text-xs text-muted-foreground shadow-2xs">
+              <span className="font-mono text-[11px]">
+                History Page {queueDetails.pagination.page} • Showing up to {queueDetails.pagination.limit} items
+              </span>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={queueDetails.pagination.page <= 1}
+                  onClick={() => onHistoryPageChange && onHistoryPageChange(queueDetails.pagination!.page - 1)}
+                  className="h-7 px-2.5 text-xs font-medium cursor-pointer"
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={
+                    recentCompleted.length < queueDetails.pagination.limit &&
+                    recentCancelled.length < queueDetails.pagination.limit
+                  }
+                  onClick={() => onHistoryPageChange && onHistoryPageChange(queueDetails.pagination!.page + 1)}
+                  className="h-7 px-2.5 text-xs font-medium cursor-pointer"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
         </>

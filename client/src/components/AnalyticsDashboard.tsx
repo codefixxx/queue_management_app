@@ -29,7 +29,9 @@ interface AnalyticsDashboardProps {
   analytics: AnalyticsData | null;
   queues: QueueSummary[];
   loading: boolean;
-  onRefresh: (queueId?: string) => void;
+  selectedRange?: string;
+  selectedQueueId?: string;
+  onRefresh: (queueId?: string, range?: string) => void;
 }
 
 const THEME_COLORS = {
@@ -44,13 +46,29 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   analytics,
   queues,
   loading,
+  selectedRange = 'today',
+  selectedQueueId = 'all',
   onRefresh
 }) => {
-  const [selectedQueueFilter, setSelectedQueueFilter] = useState<string>('all');
+  const [selectedQueueFilter, setSelectedQueueFilter] = useState<string>(selectedQueueId || 'all');
+  const [currentRange, setCurrentRange] = useState<string>(selectedRange || 'today');
+
+  React.useEffect(() => {
+    if (selectedQueueId) setSelectedQueueFilter(selectedQueueId);
+  }, [selectedQueueId]);
+
+  React.useEffect(() => {
+    if (selectedRange) setCurrentRange(selectedRange);
+  }, [selectedRange]);
 
   const handleFilterChange = (val: string) => {
     setSelectedQueueFilter(val);
-    onRefresh(val === 'all' ? undefined : val);
+    onRefresh(val === 'all' ? undefined : val, currentRange);
+  };
+
+  const handleRangeChange = (range: string) => {
+    setCurrentRange(range);
+    onRefresh(selectedQueueFilter === 'all' ? undefined : selectedQueueFilter, range);
   };
 
   if (loading || !analytics) {
@@ -79,20 +97,43 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <label className="text-xs font-medium text-muted-foreground shrink-0">Filter:</label>
-          <select
-            value={selectedQueueFilter}
-            onChange={(e) => handleFilterChange(e.target.value)}
-            className="w-full sm:w-auto text-xs font-semibold px-2.5 py-1.5 border border-border rounded-[var(--radius)] bg-card text-foreground shadow-2xs focus:outline-none focus:ring-1 focus:ring-ring"
-          >
-            <option value="all">All Queues Combined</option>
-            {queues.map((q) => (
-              <option key={q.id} value={q.id}>
-                {q.name}
-              </option>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Time Range Filter Buttons */}
+          <div className="inline-flex items-center p-0.5 bg-muted rounded-[var(--radius)] border border-border shrink-0">
+            {[
+              { id: 'today', label: 'Today' },
+              { id: '7d', label: '7D' },
+              { id: '30d', label: '30D' },
+              { id: 'all', label: 'All' }
+            ].map((r) => (
+              <button
+                key={r.id}
+                onClick={() => handleRangeChange(r.id)}
+                className={`px-2 py-1 text-[11px] font-medium rounded transition-all cursor-pointer ${
+                  currentRange === r.id
+                    ? 'bg-card text-foreground shadow-2xs font-bold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {r.label}
+              </button>
             ))}
-          </select>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+            <select
+              value={selectedQueueFilter}
+              onChange={(e) => handleFilterChange(e.target.value)}
+              className="w-full sm:w-auto text-xs font-semibold px-2.5 py-1.5 border border-border rounded-[var(--radius)] bg-card text-foreground shadow-2xs focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="all">All Queues Combined</option>
+              {queues.map((q) => (
+                <option key={q.id} value={q.id}>
+                  {q.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
