@@ -1,6 +1,6 @@
 import { User, QueueSummary, QueueDetails, Token, AnalyticsData } from './types';
 
-const rawApiUrl = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '');
+const rawApiUrl = ((import.meta.env.VITE_API_URL || (import.meta.env as any).API_URL) || '').trim().replace(/\/$/, '');
 const API_BASE = rawApiUrl
   ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`)
   : '/api';
