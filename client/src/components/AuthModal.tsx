@@ -3,7 +3,7 @@ import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { api } from '../api';
 import { User } from '../types';
-import { Sparkles, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -46,25 +46,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
   };
 
-  const handleDemoLogin = async () => {
-    setEmail('manager@queueflow.com');
-    setPassword('password123');
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await api.login({
-        email: 'manager@queueflow.com',
-        password: 'password123'
-      });
-      onSuccess(res.user);
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Demo login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <Modal
       isOpen={isOpen}
@@ -73,26 +54,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       description="Access your queues, re-order tokens, and view live analytics."
     >
       <div className="space-y-4">
-        {/* Quick Demo Credentials Pill */}
-        <div className="p-3 bg-secondary/80 border border-border rounded-[var(--radius)] flex flex-col xs:flex-row xs:items-center justify-between gap-2.5 sm:gap-3">
-          <div className="text-xs text-foreground min-w-0">
-            <span className="font-semibold flex items-center gap-1 text-primary">
-              <Sparkles className="w-3.5 h-3.5 inline shrink-0" /> Quick Demo Account
-            </span>
-            <span className="text-muted-foreground text-[11px] font-mono block truncate">manager@queueflow.com / password123</span>
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="primary"
-            onClick={handleDemoLogin}
-            loading={loading}
-            className="text-xs h-8 sm:h-7.5 px-3 w-full xs:w-auto shrink-0 justify-center"
-          >
-            Auto Login
-          </Button>
-        </div>
-
         {error && (
           <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-[var(--radius)]">
             {error}

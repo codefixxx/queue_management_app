@@ -244,24 +244,6 @@ export function App() {
     }
   };
 
-  const handleOneClickDemo = async () => {
-    try {
-      setLoading(true);
-      const res = await api.login({
-        email: 'manager@queueflow.com',
-        password: 'password123'
-      });
-      setUser(res.user);
-      addToast(`Manager: ${res.user.name}`, 'success');
-      await loadQueues();
-      await loadAnalytics();
-    } catch {
-      setIsAuthOpen(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleLogout = () => {
     api.logout();
     setUser(null);
@@ -340,20 +322,11 @@ export function App() {
               <Button
                 variant="primary"
                 size="lg"
-                loading={loading}
-                onClick={handleOneClickDemo}
-                className="w-full sm:w-auto h-10.5 sm:h-11 px-5 sm:px-6 font-semibold shadow-sm text-xs sm:text-sm"
-              >
-                <span>Open demo terminal</span>
-                <ArrowRight className="w-4 h-4 ml-1.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
                 onClick={() => setIsAuthOpen(true)}
-                className="w-full sm:w-auto h-10.5 sm:h-11 px-5 sm:px-6 text-xs sm:text-sm"
+                className="w-full sm:w-auto h-10.5 sm:h-11 px-6 sm:px-8 font-semibold shadow-sm text-xs sm:text-sm"
               >
-                Manager sign in
+                <span>Manager Sign In</span>
+                <ArrowRight className="w-4 h-4 ml-1.5" />
               </Button>
             </div>
 
