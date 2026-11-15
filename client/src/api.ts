@@ -1,6 +1,9 @@
 import { User, QueueSummary, QueueDetails, Token, AnalyticsData } from './types';
 
-const API_BASE = '/api';
+const rawApiUrl = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '');
+const API_BASE = rawApiUrl
+  ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`)
+  : '/api';
 
 export function getAuthToken(): string | null {
   return localStorage.getItem('queue_manager_token');
