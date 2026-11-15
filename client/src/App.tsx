@@ -21,6 +21,7 @@ export function App() {
   const [queues, setQueues] = useState<QueueSummary[]>([]);
   const [activeQueueId, setActiveQueueId] = useState<string | null>(null);
   const [queueDetails, setQueueDetails] = useState<QueueDetails | null>(null);
+  const [queueCache, setQueueCache] = useState<Record<string, QueueDetails>>({});
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
 
   const [isBootstrapping, setIsBootstrapping] = useState(true);
@@ -53,6 +54,7 @@ export function App() {
       setLoading(true);
       const res = await api.getQueueDetails(id);
       setQueueDetails(res.queue);
+      setQueueCache((prev) => ({ ...prev, [id]: res.queue }));
       setNetworkError(null);
     } catch (err: any) {
       console.error('Failed to load queue details:', err);
@@ -170,6 +172,9 @@ export function App() {
   // Actions
   const handleSelectQueue = (id: string) => {
     setActiveQueueId(id);
+    if (queueCache[id]) {
+      setQueueDetails(queueCache[id]);
+    }
     loadQueueDetails(id);
   };
 
@@ -235,6 +240,11 @@ export function App() {
     if (!window.confirm('Are you sure you want to delete this queue and its tokens?')) return;
     try {
       await api.deleteQueue(queueId);
+      setQueueCache((prev) => {
+        const copy = { ...prev };
+        delete copy[queueId];
+        return copy;
+      });
       addToast('Queue deleted successfully', 'info');
       loadQueues();
       loadAnalytics();
@@ -249,6 +259,7 @@ export function App() {
     setUser(null);
     setQueues([]);
     setQueueDetails(null);
+    setQueueCache({});
     setAnalytics(null);
     addToast('Signed out of terminal', 'info');
   };

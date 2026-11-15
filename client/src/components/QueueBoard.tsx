@@ -256,7 +256,7 @@ export const QueueBoard: React.FC<QueueBoardProps> = ({
       </div>
 
       {/* Active Service Counter & Waiting List with Content-Only Skeleton during Queue Switch */}
-      {loading && !isQueueDetailsCurrent ? (
+      {!isQueueDetailsCurrent ? (
         <TokenListSkeleton count={Math.min(Math.max(activeQueue?.counts?.waiting || 3, 2), 5)} />
       ) : (
         <>
